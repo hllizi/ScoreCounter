@@ -36,12 +36,12 @@ frontend =
   Frontend
     { _frontend_head = do
         el "title" $ text "Obelisk Minimal Example"
---        elAttr
---            "link"
---            ( "rel" =: "stylesheet"
---                <> "href" =: "/home/dlahm/Programmfragmente/reflex/magic/magic.css"
---            )
---            blank
+        --        elAttr
+        --            "link"
+        --            ( "rel" =: "stylesheet"
+        --                <> "href" =: "/home/dlahm/Programmfragmente/reflex/magic/magic.css"
+        --            )
+        --            blank
 #ifdef __GHCIDE__
 #else
         elAttr
@@ -53,26 +53,25 @@ frontend =
 
         elAttr "link" ("href" =: $(static "magic.css") <> "type" =: "text/css" <> "rel" =: "stylesheet") blank
 #endif
-        pure ()
-            ,
+        pure (),
       _frontend_body = do
-            prerender (el "div" $ text "No JS") startValue
-            pure ()
---      $ mdo
---        eInit <- fmap (initialValue <$) getPostBuild
---        elClass "div" "header" $ do
---          (dValue, eSetToInitial) <- elClass "div" "set-box" $ do
---            dValue <-
---              elClass "div" "choose-value" $
---                plusMinus (dynText . fmap (T.pack . show)) layout "Initial: " eInit
---            eSetToInitial <-
---              elClass "div" "set-value" $
---                button "Set to initial"
---            pure (dValue, eSetToInitial)
---          el "br" blank
---          elClass "div" "player-container" $
---             twoPlayers layoutVertical "Bambus" "Bimbus" $ current dValue <@ eSetToInitial
---        pure ()
+        prerender (el "div" $ text "No JS") startValue
+        pure ()
+        --      $ mdo
+        --        eInit <- fmap (initialValue <$) getPostBuild
+        --        elClass "div" "header" $ do
+        --          (dValue, eSetToInitial) <- elClass "div" "set-box" $ do
+        --            dValue <-
+        --              elClass "div" "choose-value" $
+        --                plusMinus (dynText . fmap (T.pack . show)) layout "Initial: " eInit
+        --            eSetToInitial <-
+        --              elClass "div" "set-value" $
+        --                button "Set to initial"
+        --            pure (dValue, eSetToInitial)
+        --          el "br" blank
+        --          elClass "div" "player-container" $
+        --             twoPlayers layoutVertical "Bambus" "Bimbus" $ current dValue <@ eSetToInitial
+        --        pure ()
     }
 
 initialValue :: Int
@@ -93,7 +92,6 @@ healthState upper hp
   | hp < upper `div` 10 = HighDanger
   | otherwise = Danger
 
-
 button :: MonadWidget t m => Text -> m (Event t ())
 button = buttonClass ""
 
@@ -105,31 +103,51 @@ buttonClass ::
 --buttonClass _ label = button label
 
 buttonClass cl label = mdo
-    (e, _) <- elAttr' "button" ("type" =: "button" <> "class" =: ("btn large " <> cl))
-            $ text label
-    pure $ domEvent Click e
+  (e, _) <-
+    elAttr' "button" ("type" =: "button" <> "class" =: ("btn large " <> cl)) $
+      text label
+  pure $ domEvent Click e
 
+main :: MonadWidget t m => m ()
+main = undefined
+
+mkHidden :: Bool -> Map Text Text
+mkHidden True = "hidden" =: ""
+mkHidden False = mempty
 
 startValue :: MonadWidget t m => m ()
 startValue = mdo
   eInit <- fmap (initialValue <$) getPostBuild
-  elClass "div" "header" $ do
-    (dValue, eSetToInitial) <- elClass "div" "set-box" $ do
-      dValue <-
+  (dValue, eSetToInitial, player1Name, player2Name) <- elClass "div" "header" $ do
+    elDynAttr "div" (("class" =: "settings" <>) . mkHidden <$> (not <$> dSettingsActive)) $ do
+     elDynClass "div" "settings-format" $ do
+      dValue <- do
+        dynamicLabel <- holdDyn "Initial: " never
         elClass "div" "choose-value" $
-          plusMinus (dynText . fmap (T.pack . show)) layout "Initial: " eInit
+          plusMinus (dynText . fmap (T.pack . show)) layout dynamicLabel eInit
       eSetToInitial <- elClass "div" "set-value" $ button "Set to initial"
-      pure (dValue, eSetToInitial)
-    el "br" blank
-    elClass "div" "player-container" $
-      twoPlayers layoutVertical "Bambus" "Bimbus" $ current dValue <@ eSetToInitial
+      (player1Name, player2Name) <- elDynClass "div" "player-names" $ do
+        let namefieldConf = def & 
+                                         inputElementConfig_elementConfig
+                                       . elementConfig_initialAttributes 
+                                            .~ ("class" =: "name-field")
+
+        player1Name <- inputElement namefieldConf
+        player2Name <- inputElement namefieldConf
+        pure (player1Name, player2Name)
+      pure (dValue, eSetToInitial, player1Name, player2Name)
+  el "br" blank
+  eBackToSettings <- elDynAttr "div" (("class" =: "player-container" <>) <$> mkHidden <$> dSettingsActive) $ do
+    twoPlayers layoutVertical (value player1Name) (value player2Name) $ current dValue <@ eSetToInitial
+    button "Back to settings"
+  dSettingsActive <- toggle True . leftmost $ [eSetToInitial, eBackToSettings]
   pure ()
 
 plusMinus ::
   (DomBuilder t m, PostBuild t m, MonadHold t m, MonadFix m) =>
   (Dynamic t Int -> m ()) ->
-  (Text -> m () -> m (Event t (), Event t ())) ->
-  Text ->
+  (Dynamic t Text -> m () -> m (Event t (), Event t ())) ->
+  Dynamic t Text ->
   Event t Int ->
   m (Dynamic t Int)
 plusMinus numberFormat layout player eInitial = mdo
@@ -149,7 +167,7 @@ plusMinus numberFormat layout player eInitial = mdo
   pure dValue
 
 layout label number = mdo
-  text label
+  dynText label
   eMinus <- button "-"
   elClass "span" "large" number
   ePlus <- button "+"
@@ -158,7 +176,7 @@ layout label number = mdo
 --layoutVertical :: (MonadWidget t m, DomBuilder t m) => Text -> m () -> m (Event t (), Event t ())
 layoutVertical label number = mdo
   elClass "div" "player-column" $ mdo
-    elClass "div" "player-name" $ text label
+    elClass "div" "player-name" $ dynText label
     ePlus <- elClass "div" "player-plus" $ button "+"
     elClass "div" "player-number large" number
     eMinus <- elClass "div" "player-minus" $ button "-"
@@ -166,9 +184,9 @@ layoutVertical label number = mdo
 
 twoPlayers ::
   (PostBuild t m, MonadHold t m, MonadFix m, DomBuilder t m) =>
-  (Text -> m () -> m (Event t (), Event t ())) ->
-  Text ->
-  Text ->
+  (Dynamic t Text -> m () -> m (Event t (), Event t ())) ->
+  Dynamic t Text ->
+  Dynamic t Text ->
   Event t Int ->
   m (Dynamic t Int, Dynamic t Int)
 twoPlayers layout player1 player2 eInitial = mdo

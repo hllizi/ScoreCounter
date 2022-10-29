@@ -1,5 +1,5 @@
 .large {
-    font-size: 4em;
+    font-size: 2em;
 }
 
 .square-button {
@@ -12,22 +12,39 @@
     width: 60%;
 }
 
-.set-box {
-    display: flex;
+.settings {
 }
 
-.set-box > .choose-value {
+.settings-format {
+    flex-dircetion: column;
+
+}
+
+.settings-format > .choose-value {
+                display: flex;
                 text-align: center;
                 order: 1;
                 }
-.set-box > .set-value {
+.settings-format > .set-value {
+                display: flex;
                 text-align: center;
                 order: 2;}
+
+.settings-format > .player-names {
+        display: flex;
+}
+
+.player-names {
+        flex-direction: column;
+}
+
+.name-field {
+        display: flex;
+    }
 
 .player-container {
     width: 60%;
     margin: auto;
-    display: flex;
     flex-dircetion: row;
 }
 
