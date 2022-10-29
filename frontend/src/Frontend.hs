@@ -25,7 +25,7 @@ import Obelisk.Configs
 import Obelisk.Frontend
 import Obelisk.Generated.Static
 import Obelisk.Route
-import Reflex.Dom.Core
+import Reflex.Dom.Core hiding (button)
 import Text.Read (readMaybe)
 
 -- This runs in a monad that can be run on the client or the server.
@@ -36,37 +36,43 @@ frontend =
   Frontend
     { _frontend_head = do
         el "title" $ text "Obelisk Minimal Example"
-        elAttr
-            "link"
-            ( "rel" =: "stylesheet"
-                <> "href" =: "/home/dlahm/Programmfragmente/reflex/magic/magic.css"
-            )
-            blank
+--        elAttr
+--            "link"
+--            ( "rel" =: "stylesheet"
+--                <> "href" =: "/home/dlahm/Programmfragmente/reflex/magic/magic.css"
+--            )
+--            blank
         elAttr
             "link"
             ( "rel" =: "script"
                 <> "href" =: "/home/dlahm/lib/bootstrap-5.2.2-dist/js/bootstrap.min.js"
             )
-            blank,
+            blank
+
 #ifdef __GHCIDE__
 #else
-        --elAttr "link" ("href" =: $(static "main.css") <> "type" =: "text/css" <> "rel" =: "stylesheet") blank
+        elAttr "link" ("href" =: $(static "magic.css") <> "type" =: "text/css" <> "rel" =: "stylesheet") blank
 #endif
-      _frontend_body = mdo
-        eInit <- fmap (initialValue <$) getPostBuild
-        elClass "div" "header" $ do
-          (dValue, eSetToInitial) <- elClass "div" "set-box" $ do
-            dValue <-
-              elClass "div" "choose-value" $
-                plusMinus (dynText . fmap (T.pack . show)) layout "Initial: " eInit
-            eSetToInitial <-
-              elClass "div" "set-value" $
-                button "Set to initial"
-            pure (dValue, eSetToInitial)
-          el "br" blank
-          elClass "div" "player-container" $
-             twoPlayers layoutVertical "Bambus" "Bimbus" $ current dValue <@ eSetToInitial
         pure ()
+            ,
+      _frontend_body = do
+            prerender (el "div" $ text "No JS") startValue
+            pure ()
+--      $ mdo
+--        eInit <- fmap (initialValue <$) getPostBuild
+--        elClass "div" "header" $ do
+--          (dValue, eSetToInitial) <- elClass "div" "set-box" $ do
+--            dValue <-
+--              elClass "div" "choose-value" $
+--                plusMinus (dynText . fmap (T.pack . show)) layout "Initial: " eInit
+--            eSetToInitial <-
+--              elClass "div" "set-value" $
+--                button "Set to initial"
+--            pure (dValue, eSetToInitial)
+--          el "br" blank
+--          elClass "div" "player-container" $
+--             twoPlayers layoutVertical "Bambus" "Bimbus" $ current dValue <@ eSetToInitial
+--        pure ()
     }
 
 initialValue :: Int
@@ -88,21 +94,21 @@ healthState upper hp
   | otherwise = Danger
 
 
---button :: MonadWidget t m => Text -> m (Event t ())
---button = buttonClass ""
+button :: MonadWidget t m => Text -> m (Event t ())
+button = buttonClass ""
 
 buttonClass ::
   MonadWidget t m =>
   Text ->
   Text ->
   m (Event t ())
-buttonClass _ label = button label
+--buttonClass _ label = button label
 
---buttonClass cl label = mdo
---    (e, _) <- elAttr' "button" ("type" =: "button" <> "class" =: ("btn large " <> cl))
---            $ text label
---    pure $ domEvent Click e
---
+buttonClass cl label = mdo
+    (e, _) <- elAttr' "button" ("type" =: "button" <> "class" =: ("btn large " <> cl))
+            $ text label
+    pure $ domEvent Click e
+
 
 startValue :: MonadWidget t m => m ()
 startValue = mdo
