@@ -1,0 +1,57 @@
+.large {
+    font-size: 4em;
+}
+
+.square-button {
+    width: 100px;
+    height: 100px;
+}
+
+.header {
+    margin: auto;
+    width: 60%;
+}
+
+.set-box {
+    display: flex;
+}
+
+.set-box > .choose-value {
+                text-align: center;
+                order: 1;
+                }
+.set-box > .set-value {
+                text-align: center;
+                order: 2;}
+
+.player-container {
+    width: 60%;
+    margin: auto;
+    display: flex;
+    flex-dircetion: row;
+}
+
+.player-column {
+        width: 50%;
+        margin: auto;
+        display: flex;
+        flex-direction: column;
+    }
+
+.example > .player-name {order: 1;}
+.example > .player-plus {order: 2;}
+.example > .player-number {order: 3;}
+.example > .player-minus {order: 4;}
+
+.good {
+    color: green
+}
+.ok {
+    color: orange
+}
+.danger {
+    color: red
+}
+.high-danger {
+    color: purple
+}
