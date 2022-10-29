@@ -42,6 +42,8 @@ frontend =
 --                <> "href" =: "/home/dlahm/Programmfragmente/reflex/magic/magic.css"
 --            )
 --            blank
+#ifdef __GHCIDE__
+#else
         elAttr
             "link"
             ( "rel" =: "script"
@@ -49,8 +51,6 @@ frontend =
             )
             blank
 
-#ifdef __GHCIDE__
-#else
         elAttr "link" ("href" =: $(static "magic.css") <> "type" =: "text/css" <> "rel" =: "stylesheet") blank
 #endif
         pure ()
