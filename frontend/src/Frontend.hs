@@ -136,10 +136,9 @@ startValue = mdo
         player2Name <- inputElement namefieldConf
         pure (player1Name, player2Name)
       pure (dValue, eSetToInitial, player1Name, player2Name)
-  el "br" blank
-  eBackToSettings <- elDynAttr "div" (("class" =: "player-container" <>) <$> mkHidden <$> dSettingsActive) $ do
+  elDynAttr "table" (("class" =: "players" <>) <$> mkHidden <$> dSettingsActive) $ do
     twoPlayers layoutVertical (value player1Name) (value player2Name) $ current dValue <@ eSetToInitial
-    button "Back to settings"
+  eBackToSettings <-  button "Back to settings"
   dSettingsActive <- toggle True . leftmost $ [eSetToInitial, eBackToSettings]
   pure ()
 
@@ -175,11 +174,11 @@ layout label number = mdo
 
 --layoutVertical :: (MonadWidget t m, DomBuilder t m) => Text -> m () -> m (Event t (), Event t ())
 layoutVertical label number = mdo
-  elClass "div" "player-column" $ mdo
-    elClass "div" "player-name" $ dynText label
-    ePlus <- elClass "div" "player-plus" $ button "+"
-    elClass "div" "player-number large" number
-    eMinus <- elClass "div" "player-minus" $ button "-"
+  elClass "tr" "player-container" $ mdo
+    elClass "td" "player-name" $ dynText label
+    eMinus <- elClass "td" "player-minus" $ button "-"
+    elClass "td" "player-number large" number
+    ePlus <- elClass "td" "player-plus" $ button "+"
     pure (eMinus, ePlus)
 
 twoPlayers ::

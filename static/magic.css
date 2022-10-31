@@ -16,7 +16,7 @@
 }
 
 .settings-format {
-    flex-dircetion: column;
+    flex-direction: column;
 
 }
 
@@ -26,39 +26,37 @@
                 order: 1;
                 }
 .settings-format > .set-value {
-                display: flex;
                 text-align: center;
                 order: 2;}
 
 .settings-format > .player-names {
-        display: flex;
 }
 
 .player-names {
-        flex-direction: column;
 }
 
 .name-field {
-        display: flex;
     }
+
+.players {
+}
 
 .player-container {
     width: 60%;
     margin: auto;
-    flex-dircetion: row;
 }
 
-.player-column {
+.player-area {
         width: 50%;
         margin: auto;
         display: flex;
-        flex-direction: column;
+        flex-direction: row;
     }
 
-.example > .player-name {order: 1;}
-.example > .player-plus {order: 2;}
-.example > .player-number {order: 3;}
-.example > .player-minus {order: 4;}
+.player-name {order: 1;}
+.player-plus {order: 4;}
+.player-number {order: 3;}
+.player-minus {order: 2;}
 
 .good {
     color: green
