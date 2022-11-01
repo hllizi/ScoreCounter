@@ -118,30 +118,52 @@ mkHidden False = mempty
 startValue :: MonadWidget t m => m ()
 startValue = mdo
   eInit <- fmap (initialValue <$) getPostBuild
-  (dValue, eSetToInitial, player1Name, player2Name) <- elClass "div" "header" $ do
-    elDynAttr "div" (("class" =: "settings" <>) . mkHidden <$> (not <$> dSettingsActive)) $ do
-      elDynClass "div" "settings-format" $ do
-        dValue <- do
-          dynamicLabel <- holdDyn "Initial: " never
-          elClass "div" "choose-value" $
-            plusMinus (dynText . fmap (T.pack . show)) layout eInit dynamicLabel 
-        eSetToInitial <- elClass "div" "set-value" $ button "Set to initial"
-        (player1Name, player2Name) <- elDynClass "div" "player-names" $ do
-          let namefieldConf =
-                def
-                  & inputElementConfig_elementConfig
-                    . elementConfig_initialAttributes
-                  .~ ("class" =: "name-field")
-
-          player1Name <- inputElement namefieldConf
-          player2Name <- inputElement namefieldConf
-          pure (player1Name, player2Name)
-        pure (dValue, eSetToInitial, player1Name, player2Name)
+  (dValue, eSetToInitial, dPlayers) <- settingsWidget dSettingsActive eInit
   elDynAttr "table" (("class" =: "players" <>) <$> mkHidden <$> dSettingsActive) $ do
-    players layoutVertical [(value player1Name), (value player2Name)] $ current dValue <@ eSetToInitial
+    pure $ players layoutVertical <$> (dPlayers ^. inputElement_value) <*> (pure $ current dValue <@ eSetToInitial)
   eBackToSettings <- button "Back to settings"
-  dSettingsActive <- toggle True . leftmost $ [eSetToInitial, eBackToSettings]
+  let dSettingsActive = toggle True . leftmost $ [eSetToInitial, eBackToSettings]
   pure ()
+  where
+    settingsWidget :: MonadWidget t m => Dynamic t Bool -> Event t Int -> m (Dynamic t Int, Event t (), Dynamic t [InputElement EventResult GhcjsDomSpace t])
+    settingsWidget dSettingsActive eInit =
+      elClass "div" "header" $
+        elDynAttr
+          "div"
+          ( ("class" =: "settings" <>)
+              . mkHidden
+              <$> (not <$> dSettingsActive)
+          )
+          $ do
+            elDynClass "div" "settings-format" $ do
+              dValue <- do
+                dynamicLabel <- holdDyn "Initial: " never
+                elClass "div" "choose-value" $
+                  plusMinus
+                    (dynText . fmap (T.pack . show))
+                    layout
+                    eInit
+                    dynamicLabel
+              eSetToInitial <- elClass "div" "set-value" $ button "Set to initial"
+              dPlayers <- elDynClass "div" "player-names" $ mdo
+                let namefieldConf =
+                      def
+                        & inputElementConfig_elementConfig
+                          . elementConfig_initialAttributes
+                        .~ ("class" =: "name-field")
+                let inputElementSource = inputElement namefieldConf
+                initialElements <-
+                  (\x y -> (x : y : [])) <$> inputElementSource <*> inputElementSource
+                dPlayers <- holdDyn initialElements eElements
+                let eElements = attachWith (flip (:)) (current dPlayers) eAddPlayer
+                eAddPlayer <- (<$ eAddButton) <$> (inputElement namefieldConf)
+                eAddButton <- button "Add Player"
+                pure $ dPlayers
+              pure (dValue, eSetToInitial, dPlayers)
+
+boo :: Monad m => [m a] -> m [a]
+boo [] = pure []
+boo (mx : mxs) = (:) <$> mx <*> boo mxs
 
 plusMinus ::
   (DomBuilder t m, PostBuild t m, MonadHold t m, MonadFix m) =>
@@ -182,20 +204,22 @@ layoutVertical label number = mdo
     ePlus <- elClass "td" "player-plus" $ button "+"
     pure (eMinus, ePlus)
 
-
 players ::
   (PostBuild t m, MonadHold t m, MonadFix m, DomBuilder t m) =>
   (Dynamic t Text -> m () -> m (Event t (), Event t ())) ->
   [Dynamic t Text] ->
   Event t Int ->
   m [Dynamic t Int]
-players layout players eInitial = mdo 
-    dInitial <- holdDyn initialValue eInitial
-    sequence $ ffor players
-                   (plusMinus 
-                    (formatHp dInitial) 
-                        layout
-                        eInitial)
+players layout players eInitial = mdo
+  dInitial <- holdDyn initialValue eInitial
+  sequence $
+    ffor
+      players
+      ( plusMinus
+          (formatHp dInitial)
+          layout
+          eInitial
+      )
 
 twoPlayers ::
   (PostBuild t m, MonadHold t m, MonadFix m, DomBuilder t m) =>
@@ -221,10 +245,10 @@ twoPlayers layout player1 player2 eInitial = mdo
   pure (dPlayer1, dPlayer2)
 
 playerHealthClass dInitial dPlayer = do
-      max <- dInitial
-      playerHp <- dPlayer
-      pure $ T.pack . show $ healthState max playerHp
+  max <- dInitial
+  playerHp <- dPlayer
+  pure $ T.pack . show $ healthState max playerHp
 
 formatHp dInitial dPlayer = mdo
-      let dPlayerClass = playerHealthClass dInitial dPlayer
-      elDynClass "span" dPlayerClass $ dynText $ T.pack . show <$> dPlayer
+  let dPlayerClass = playerHealthClass dInitial dPlayer
+  elDynClass "span" dPlayerClass $ dynText $ T.pack . show <$> dPlayer
