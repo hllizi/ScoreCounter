@@ -118,14 +118,15 @@ mkHidden False = mempty
 startValue :: MonadWidget t m => m ()
 startValue = mdo
   eInit <- fmap (initialValue <$) getPostBuild
+  text "Bohl"
   (dValue, eSetToInitial, dPlayers) <- settingsWidget dSettingsActive eInit
-  elDynAttr "table" (("class" =: "players" <>) <$> mkHidden <$> dSettingsActive) $ do
-    pure $ players layoutVertical <$> (dPlayers ^. inputElement_value) <*> (pure $ current dValue <@ eSetToInitial)
+  text "Fiberzutz"
+  elDynAttr "table" (("class" =: "players" <>) . mkHidden <$> dSettingsActive) blank
+  dSettingsActive <- toggle True . leftmost $ [eSetToInitial, eBackToSettings]
   eBackToSettings <- button "Back to settings"
-  let dSettingsActive = toggle True . leftmost $ [eSetToInitial, eBackToSettings]
   pure ()
   where
-    settingsWidget :: MonadWidget t m => Dynamic t Bool -> Event t Int -> m (Dynamic t Int, Event t (), Dynamic t [InputElement EventResult GhcjsDomSpace t])
+    settingsWidget :: MonadWidget t m => Dynamic t Bool -> Event t Int -> m (Dynamic t Int, Event t (), Behavior t [InputElement EventResult GhcjsDomSpace t])
     settingsWidget dSettingsActive eInit =
       elClass "div" "header" $
         elDynAttr
@@ -145,21 +146,27 @@ startValue = mdo
                     eInit
                     dynamicLabel
               eSetToInitial <- elClass "div" "set-value" $ button "Set to initial"
-              dPlayers <- elDynClass "div" "player-names" $ mdo
+              text "Bohein"
+              bPlayers <- elDynClass "div" "player-names" $ mdo
                 let namefieldConf =
                       def
                         & inputElementConfig_elementConfig
                           . elementConfig_initialAttributes
                         .~ ("class" =: "name-field")
                 let inputElementSource = inputElement namefieldConf
+                text "Öfkens"
                 initialElements <-
-                  (\x y -> (x : y : [])) <$> inputElementSource <*> inputElementSource
-                dPlayers <- holdDyn initialElements eElements
-                let eElements = attachWith (flip (:)) (current dPlayers) eAddPlayer
-                eAddPlayer <- (<$ eAddButton) <$> (inputElement namefieldConf)
+                  (\x y -> x : y : []) <$> inputElementSource <*> inputElementSource
+                text "Bamboon"
+                dPlayers <- foldDyn ($) initialElements eAddPlayer
+                --let eElements = attachWith (flip (:)) (current dPlayers) eAddPlayer
+                eAddPlayer <- 
+                    fmap ((<$ eAddButton) . (<>)) (sequence [inputElement namefieldConf])
+                text "Bamboooon"
                 eAddButton <- button "Add Player"
-                pure $ dPlayers
-              pure (dValue, eSetToInitial, dPlayers)
+                pure $ (current dPlayers)
+              text "Balfrisian"
+              pure (dValue, eSetToInitial, bPlayers)
 
 boo :: Monad m => [m a] -> m [a]
 boo [] = pure []
