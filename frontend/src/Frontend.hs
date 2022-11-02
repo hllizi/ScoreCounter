@@ -127,7 +127,7 @@ startValue = mdo
     blank
   elDynAttr
     "table"
-    (("class" =: "players" <>) <$> mkHidden <$> dSettingsActive)
+    (("class" =: "players" <>) . mkHidden <$> dSettingsActive)
     $ do
       players layoutVertical dPlayers $ current dValue <@ eSetToInitial
 
@@ -157,17 +157,32 @@ startValue = mdo
               eSetToInitial <- elClass "div" "set-value" $ button "Set to initial"
               text "Bohein"
               ePlayers <- elDynClass "div" "player-names" $ mdo
-                dPlayers <- foldDyn ($) (sequence [inputElement def]) eAddInput
+                let knüllert = do
+                      inputEl <- inputElement def
+                      dynText $ value inputEl
+                      pure $ value inputEl
+                let eAddInput = ((:) <$> knüllert <*>) <$ eAddButton
+                dPlayers <-
+                  foldDyn
+                    ($)
+                    ( (: [])
+                        <$> knüllert
+                    )
+                    eAddInput
                 playerList <- dyn dPlayers
-                pure $ fmap (map value) playerList
+                pure playerList
 
-              ddPlayers <- (fmap . fmap) sequence $ holdDyn [] ePlayers
+              ddPlayers <- fmap sequence <$> holdDyn [] ePlayers
               let dPlayers = join ddPlayers
 
               eAddButton <- button "Add Player"
-              let eAddInput = ((:) <$> inputElement def <*>) <$ eAddButton
 
               pure (dValue, eSetToInitial, dPlayers)
+
+testWidget :: MonadWidget t m => Dynamic t (m ())
+testWidget = pure $ do
+  inputz <- inputElement def
+  dynText (value inputz)
 
 inputElementSource :: MonadWidget t m => m (InputElement EventResult (DomBuilderSpace m) t)
 inputElementSource =
@@ -177,10 +192,6 @@ inputElementSource =
             . elementConfig_initialAttributes
           .~ ("class" =: "name-field")
    in inputElement namefieldConf
-
-boo :: Monad m => [m a] -> m [a]
-boo [] = pure []
-boo (mx : mxs) = (:) <$> mx <*> boo mxs
 
 plusMinus ::
   (DomBuilder t m, PostBuild t m, MonadHold t m, MonadFix m) =>
@@ -229,11 +240,12 @@ players ::
   m (Dynamic t [Int])
 players layout players eInitial = mdo
   dInitial <- holdDyn initialValue eInitial
-  list <- simpleList
-                players
-                (displayRow dInitial)
+  list <-
+    simpleList
+      players
+      (displayRow dInitial)
   let list2 = sequence <$> list
-  pure $ join list2 
+  pure $ join list2
   where
     displayRow dInitial = do
       plusMinus
