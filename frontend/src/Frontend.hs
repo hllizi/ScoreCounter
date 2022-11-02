@@ -119,14 +119,23 @@ startValue :: MonadWidget t m => m ()
 startValue = mdo
   eInit <- fmap (initialValue <$) getPostBuild
   text "Bohl"
-  (dValue, eSetToInitial) <- settingsWidget dSettingsActive eInit
+  (dValue, eSetToInitial, dPlayers) <- settingsWidget dSettingsActive eInit
   text "Fiberzutz"
-  elDynAttr "table" (("class" =: "players" <>) . mkHidden <$> dSettingsActive) blank
+  elDynAttr
+    "table"
+    (("class" =: "players" <>) . mkHidden <$> dSettingsActive)
+    blank
+  elDynAttr
+    "table"
+    (("class" =: "players" <>) <$> mkHidden <$> dSettingsActive)
+    $ do
+      players layoutVertical dPlayers $ current dValue <@ eSetToInitial
+
   dSettingsActive <- toggle True . leftmost $ [eSetToInitial, eBackToSettings]
   eBackToSettings <- button "Back to settings"
   pure ()
   where
-    settingsWidget :: MonadWidget t m => Dynamic t Bool -> Event t Int -> m (Dynamic t Int, Event t ())
+    settingsWidget :: MonadWidget t m => Dynamic t Bool -> Event t Int -> m (Dynamic t Int, Event t (), Dynamic t [Text])
     settingsWidget dSettingsActive eInit =
       elClass "div" "header" $
         elDynAttr
@@ -147,25 +156,27 @@ startValue = mdo
                     dynamicLabel
               eSetToInitial <- elClass "div" "set-value" $ button "Set to initial"
               text "Bohein"
-              elDynClass "div" "player-names" $ mdo
+              ePlayers <- elDynClass "div" "player-names" $ mdo
                 dPlayers <- foldDyn ($) (sequence [inputElement def]) eAddInput
-                dyn_ dPlayers
+                playerList <- dyn dPlayers
+                pure $ fmap (map value) playerList
+
+              ddPlayers <- (fmap . fmap) sequence $ holdDyn [] ePlayers
+              let dPlayers = join ddPlayers
 
               eAddButton <- button "Add Player"
               let eAddInput = ((:) <$> inputElement def <*>) <$ eAddButton
-                
 
-              pure (dValue, eSetToInitial)
+              pure (dValue, eSetToInitial, dPlayers)
 
 inputElementSource :: MonadWidget t m => m (InputElement EventResult (DomBuilderSpace m) t)
-inputElementSource = 
-        let namefieldConf =
-                      def
-                        & inputElementConfig_elementConfig
-                          . elementConfig_initialAttributes
-                        .~ ("class" =: "name-field")
-         in
-            inputElement namefieldConf
+inputElementSource =
+  let namefieldConf =
+        def
+          & inputElementConfig_elementConfig
+            . elementConfig_initialAttributes
+          .~ ("class" =: "name-field")
+   in inputElement namefieldConf
 
 boo :: Monad m => [m a] -> m [a]
 boo [] = pure []
@@ -213,19 +224,22 @@ layoutVertical label number = mdo
 players ::
   (PostBuild t m, MonadHold t m, MonadFix m, DomBuilder t m) =>
   (Dynamic t Text -> m () -> m (Event t (), Event t ())) ->
-  [Dynamic t Text] ->
+  Dynamic t [Text] ->
   Event t Int ->
-  m [Dynamic t Int]
+  m (Dynamic t [Int])
 players layout players eInitial = mdo
   dInitial <- holdDyn initialValue eInitial
-  sequence $
-    ffor
-      players
-      ( plusMinus
-          (formatHp dInitial)
-          layout
-          eInitial
-      )
+  list <- simpleList
+                players
+                (displayRow dInitial)
+  let list2 = sequence <$> list
+  pure $ join list2 
+  where
+    displayRow dInitial = do
+      plusMinus
+        (formatHp dInitial)
+        layout
+        eInitial
 
 twoPlayers ::
   (PostBuild t m, MonadHold t m, MonadFix m, DomBuilder t m) =>
