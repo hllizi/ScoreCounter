@@ -157,20 +157,13 @@ startValue = mdo
               eSetToInitial <- elClass "div" "set-value" $ button "Set to initial"
               text "Bohein"
               ePlayers <- elDynClass "div" "player-names" $ mdo
-                let knüllert = do
-                      inputEl <- inputElement def
-                      dynText $ value inputEl
-                      pure $ value inputEl
-                let eAddInput = ((:) <$> knüllert <*>) <$ eAddButton
-                dPlayers <-
-                  foldDyn
-                    ($)
-                    ( (: [])
-                        <$> knüllert
-                    )
-                    eAddInput
+                let eAddInput = ((:) <$> inputElement def <*>) <$ eAddButton
+                let eAddInput2 = ((:) (inputElement def)) <$ eAddButton
+                dPlayers <- foldDyn ($) ((: []) <$> inputElement def) eAddInput
+                dmPlayers <- foldDyn ($) ((: []) $ inputElement def) eAddInput2
                 playerList <- dyn dPlayers
-                pure playerList
+                simpleList dmPlayers displayInputLine
+                pure $ fmap (map value) playerList
 
               ddPlayers <- fmap sequence <$> holdDyn [] ePlayers
               let dPlayers = join ddPlayers
@@ -178,6 +171,19 @@ startValue = mdo
               eAddButton <- button "Add Player"
 
               pure (dValue, eSetToInitial, dPlayers)
+
+displayInputLine :: MonadWidget t m => Dynamic t (m (InputElement EventResult (DomBuilderSpace m) t)) -> m ()
+displayInputLine dInputLine = mdo
+  text "Dynte Baal"
+  dyn_ dInputLine
+
+--dmPlye :: MonadWidget t m =>    Event t (InputElement EventResult (DomBuilderSpace m) t)
+--                            ->  (m (InputElement EventResult (DomBuilderSpace m) t
+--                            ->  [m (InputElement EventResult (DomBuilderSpace m) t)]
+--                            ->  [m (InputElement EventResult (DomBuilderSpace m) t)]))
+--                            ->  (Dynamic t [m (InputElement EventResult (DomBuilderSpace m) t)])
+--dmPlye trigger =
+--                foldDyn ($) ((: []) $ inputElement def) trigger
 
 testWidget :: MonadWidget t m => Dynamic t (m ())
 testWidget = pure $ do
