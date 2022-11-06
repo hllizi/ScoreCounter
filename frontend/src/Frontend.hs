@@ -3,6 +3,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecursiveDo #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 
 module Frontend where
@@ -119,7 +120,7 @@ startValue :: MonadWidget t m => m ()
 startValue = mdo
   eInit <- fmap (initialValue <$) getPostBuild
   text "Bohl"
-  (dValue, eSetToInitial, dPlayers) <- settingsWidget dSettingsActive eInit
+  (dValue, eSetToInitial, dPlayers) <- settingsWidget dSettingsActive
   text "Fiberzutz"
   elDynAttr
     "table"
@@ -135,8 +136,10 @@ startValue = mdo
   eBackToSettings <- button "Back to settings"
   pure ()
   where
-    settingsWidget :: MonadWidget t m => Dynamic t Bool -> Event t Int -> m (Dynamic t Int, Event t (), Dynamic t [Text])
-    settingsWidget dSettingsActive eInit =
+    settingsWidget :: MonadWidget t m => Dynamic t Bool -> m (Dynamic t Int, Event t (), Dynamic t [Text])
+    settingsWidget dSettingsActive = mdo
+      eInitHp <- fmap (initialValue <$) getPostBuild
+      eInitPlayernumber <- fmap (2 <$) getPostBuild
       elClass "div" "header" $
         elDynAttr
           "div"
@@ -147,30 +150,44 @@ startValue = mdo
           $ do
             elDynClass "div" "settings-format" $ mdo
               dValue <- do
-                dynamicLabel <- holdDyn "Initial: " never
+                dInitialLabel <- holdDyn "Initial: " never
                 elClass "div" "choose-value" $
                   plusMinus
                     (dynText . fmap (T.pack . show))
                     layout
-                    eInit
-                    dynamicLabel
-              eSetToInitial <- elClass "div" "set-value" $ button "Set to initial"
-              text "Bohein"
-              ePlayers <- elDynClass "div" "player-names" $ mdo
-                let eAddInput = ((:) <$> inputElement def <*>) <$ eAddButton
-                let eAddInput2 = ((:) (inputElement def)) <$ eAddButton
-                dPlayers <- foldDyn ($) ((: []) <$> inputElement def) eAddInput
-                dmPlayers <- foldDyn ($) ((: []) $ inputElement def) eAddInput2
-                playerList <- dyn dPlayers
-                simpleList dmPlayers displayInputLine
-                pure $ fmap (map value) playerList
+                    eInitHp
+                    dInitialLabel
+              dPlayerNumber <- do
+                dNumberOfPlayersLabel <- holdDyn "Number of players: " never
+                elClass "div" "choose-player-number" $
+                  plusMinus
+                    (dynText . fmap (T.pack . show))
+                    layout
+                    eInitPlayernumber
+                    dNumberOfPlayersLabel
 
-              ddPlayers <- fmap sequence <$> holdDyn [] ePlayers
+              eSetToInitial <- elClass "div" "set-value-button" $ button "Set to initial"
+              eCreatePlayers <- elClass "div" "create-players-button" $ button "Create Players"
+              eAddButton <- elClass "div" "add-value-button" $ button "add"
+              text "Bohein"
+              dPlayersies <- elDynClass "div" "player-names" $ mdo
+                --let eAddInput = ((:) <$> inputElement def <*>) <$ eAddButton
+                --dPlayers <- foldDyn ($) ((: []) <$> inputElement def) eAddInput
+                let widgets = playerWidgets dPlayerNumber
+                let ePlayerCreation = (current $ widgets) <@ eCreatePlayers
+                dPlayers2 <- widgetHold ((: []) <$> inputElement def) ePlayerCreation
+                --playerList <- dyn $ widgets --dPlayers2
+                pure $ fmap (map value) dPlayers2
+
+              ddPlayers <- fmap sequence <$> holdDyn [] (updated dPlayersies)
               let dPlayers = join ddPlayers
 
-              eAddButton <- button "Add Player"
-
               pure (dValue, eSetToInitial, dPlayers)
+
+playerWidgets :: (DomBuilder t m) => Dynamic t Int -> Dynamic t (m [InputElement EventResult (DomBuilderSpace m) t])
+playerWidgets dPlayerNumber = do
+  playerNumber <- dPlayerNumber
+  pure $ replicateM playerNumber $ inputElement def
 
 displayInputLine :: MonadWidget t m => Dynamic t (m (InputElement EventResult (DomBuilderSpace m) t)) -> m ()
 displayInputLine dInputLine = mdo
