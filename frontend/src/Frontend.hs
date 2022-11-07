@@ -45,34 +45,14 @@ frontend =
         --            blank
 #ifdef __GHCIDE__
 #else
-        elAttr
-            "link"
-            ( "rel" =: "script"
-                <> "href" =: "/home/dlahm/lib/bootstrap-5.2.2-dist/js/bootstrap.min.js"
-            )
-            blank
-
         elAttr "link" ("href" =: $(static "magic.css") <> "type" =: "text/css" <> "rel" =: "stylesheet") blank
+--        elAttr "link" ("href" =: $(static "bootstrap/css/*.css") <> "type" =: "text/css" <> "rel" =: "stylesheet") blank
+--        elAttr "link" ("href" =: $(static "bootstrap/js/*.js") <> "type" =: "text/css" <> "rel" =: "stylesheet") blank
 #endif
         pure (),
       _frontend_body = do
         prerender (el "div" $ text "No JS") startValue
         pure ()
-        --      $ mdo
-        --        eInit <- fmap (initialValue <$) getPostBuild
-        --        elClass "div" "header" $ do
-        --          (dValue, eSetToInitial) <- elClass "div" "set-box" $ do
-        --            dValue <-
-        --              elClass "div" "choose-value" $
-        --                plusMinus (dynText . fmap (T.pack . show)) layout "Initial: " eInit
-        --            eSetToInitial <-
-        --              elClass "div" "set-value" $
-        --                button "Set to initial"
-        --            pure (dValue, eSetToInitial)
-        --          el "br" blank
-        --          elClass "div" "player-container" $
-        --             twoPlayers layoutVertical "Bambus" "Bimbus" $ current dValue <@ eSetToInitial
-        --        pure ()
     }
 
 initialValue :: Int
@@ -105,7 +85,7 @@ buttonClass ::
 
 buttonClass cl label = mdo
   (e, _) <-
-    elAttr' "button" ("type" =: "button" <> "class" =: ("btn large " <> cl)) $
+    elAttr' "button" ("type" =: "button" <> "class" =: ("large " <> cl)) $
       text label
   pure $ domEvent Click e
 
@@ -119,9 +99,7 @@ mkHidden False = mempty
 startValue :: MonadWidget t m => m ()
 startValue = mdo
   eInit <- fmap (initialValue <$) getPostBuild
-  text "Bohl"
   (dValue, eSetToInitial, dPlayers) <- settingsWidget dSettingsActive
-  text "Fiberzutz"
   elDynAttr
     "table"
     (("class" =: "players" <>) . mkHidden <$> dSettingsActive)
@@ -140,67 +118,61 @@ startValue = mdo
     settingsWidget dSettingsActive = mdo
       eInitHp <- fmap (initialValue <$) getPostBuild
       eInitPlayernumber <- fmap (2 <$) getPostBuild
-      elClass "div" "header" $
+      elClass "div" "settings-box" $ do
+        elClass "div" "header" $ text "Settings"
         elDynAttr
           "div"
           ( ("class" =: "settings" <>)
               . mkHidden
               <$> (not <$> dSettingsActive)
           )
-          $ do
-            elDynClass "div" "settings-format" $ mdo
+          $ mdo
+              let inputConfig = def & 
+                                 inputElementConfig_elementConfig 
+                               . elementConfig_initialAttributes .~ ("class" =: "large centered") 
               dValue <- do
                 dInitialLabel <- holdDyn "Initial: " never
-                elClass "div" "choose-value" $
-                  plusMinus
+                plusMinus
                     (dynText . fmap (T.pack . show))
                     layout
                     eInitHp
                     dInitialLabel
-              dPlayerNumber <- do
+              dNumberOfPlayers <- do
                 dNumberOfPlayersLabel <- holdDyn "Number of players: " never
-                elClass "div" "choose-player-number" $
-                  plusMinus
+                plusMinus
                     (dynText . fmap (T.pack . show))
                     layout
                     eInitPlayernumber
                     dNumberOfPlayersLabel
 
-              eSetToInitial <- elClass "div" "set-value-button" $ button "Set to initial"
-              eCreatePlayers <- elClass "div" "create-players-button" $ button "Create Players"
-              eAddButton <- elClass "div" "add-value-button" $ button "add"
-              text "Bohein"
-              dPlayersies <- elDynClass "div" "player-names" $ mdo
-                --let eAddInput = ((:) <$> inputElement def <*>) <$ eAddButton
-                --dPlayers <- foldDyn ($) ((: []) <$> inputElement def) eAddInput
-                let widgets = playerWidgets dPlayerNumber
-                let ePlayerCreation = (current $ widgets) <@ eCreatePlayers
-                dPlayers2 <- widgetHold ((: []) <$> inputElement def) ePlayerCreation
-                --playerList <- dyn $ widgets --dPlayers2
-                pure $ fmap (map value) dPlayers2
+              eCreatePlayers <- elClass "div" "button-row" $ 
+                                    buttonClass 
+                                        "centered-button" 
+                                        "Create Players"
+              dPlayersRaw <- elDynClass "div" "player-names" $ mdo
+                let widgets = playerWidgets inputConfig dNumberOfPlayers
+                let ePlayerCreation = current widgets <@ eCreatePlayers
+                dPlayers <- widgetHold ((: []) <$> inputElement inputConfig) ePlayerCreation
+                pure $ fmap (map value) dPlayers
 
-              ddPlayers <- fmap sequence <$> holdDyn [] (updated dPlayersies)
+              ddPlayers <- fmap sequence <$> holdDyn [] (updated dPlayersRaw)
               let dPlayers = join ddPlayers
 
+              eSetToInitial <- elClass "div" "button-row" $ 
+                                buttonClass 
+                                    "centered-button"
+                                    "Set to initial"
               pure (dValue, eSetToInitial, dPlayers)
 
-playerWidgets :: (DomBuilder t m) => Dynamic t Int -> Dynamic t (m [InputElement EventResult (DomBuilderSpace m) t])
-playerWidgets dPlayerNumber = do
+playerWidgets :: (DomBuilder t m) => InputElementConfig EventResult t (DomBuilderSpace m) -> Dynamic t Int -> Dynamic t (m [InputElement EventResult (DomBuilderSpace m) t])
+playerWidgets inputConfig dPlayerNumber = do
   playerNumber <- dPlayerNumber
-  pure $ replicateM playerNumber $ inputElement def
+  pure $ replicateM playerNumber $ inputElement inputConfig 
 
 displayInputLine :: MonadWidget t m => Dynamic t (m (InputElement EventResult (DomBuilderSpace m) t)) -> m ()
 displayInputLine dInputLine = mdo
   text "Dynte Baal"
   dyn_ dInputLine
-
---dmPlye :: MonadWidget t m =>    Event t (InputElement EventResult (DomBuilderSpace m) t)
---                            ->  (m (InputElement EventResult (DomBuilderSpace m) t
---                            ->  [m (InputElement EventResult (DomBuilderSpace m) t)]
---                            ->  [m (InputElement EventResult (DomBuilderSpace m) t)]))
---                            ->  (Dynamic t [m (InputElement EventResult (DomBuilderSpace m) t)])
---dmPlye trigger =
---                foldDyn ($) ((: []) $ inputElement def) trigger
 
 testWidget :: MonadWidget t m => Dynamic t (m ())
 testWidget = pure $ do
@@ -240,11 +212,13 @@ plusMinus numberFormat layout eInitial player = mdo
   pure dValue
 
 layout label number = mdo
-  dynText label
-  eMinus <- button "-"
-  elClass "span" "large" number
-  ePlus <- button "+"
-  pure (eMinus, ePlus)
+  elClass "div" "settings-row" $ do
+    dynText label
+    elClass "span" "controls" $ do
+        eMinus <- buttonClass "button left-button" "-"
+        elClass "span" "number-display" number
+        ePlus <- buttonClass "button right-button" "+"
+        pure (eMinus, ePlus)
 
 --layoutVertical :: (MonadWidget t m, DomBuilder t m) => Text -> m () -> m (Event t (), Event t ())
 layoutVertical label number = mdo
