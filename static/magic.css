@@ -92,14 +92,14 @@ html,body { height: 100%;}
 .player-names {
     width: 60%;
     margin: auto;
-    display: block;
+    display: flex;
+    flex-direction: column;
 }
 
 .name-field {
+    font-size: 4em;
     }
 
-.players {
-}
 
 .player-container {
     width: 60%;

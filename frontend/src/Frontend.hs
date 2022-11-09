@@ -187,6 +187,9 @@ playerWidgets inputConfig dPlayerNumber = do
               ( def
                   & inputElementConfig_initialValue
                   .~ "Player " <> (T.pack $ show i)
+                  & inputElementConfig_elementConfig
+                  . elementConfig_initialAttributes 
+                  .~ ("class" =: "name-field")
               )
           
           makePlayerInputConfigs :: (DomSpace s, Reflex t) => Int -> [InputElementConfig EventResult t s]
