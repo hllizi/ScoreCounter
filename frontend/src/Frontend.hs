@@ -111,7 +111,8 @@ startValue = mdo
       players layoutVertical dPlayers $ current dValue <@ eSetToInitial
 
   dSettingsActive <- toggle True . leftmost $ [eSetToInitial, eBackToSettings]
-  eBackToSettings <- button "Back to settings"
+  (e, _) <- elAttr' "a" ("href" =: "") $ text "Back to settings"
+  let eBackToSettings = domEvent Click e
   pure ()
   where
     settingsWidget :: MonadWidget t m => Dynamic t Bool -> m (Dynamic t Int, Event t (), Dynamic t [Text])
@@ -127,28 +128,35 @@ startValue = mdo
               <$> (not <$> dSettingsActive)
           )
           $ mdo
-              let inputConfig = def & 
-                                 inputElementConfig_elementConfig 
-                               . elementConfig_initialAttributes .~ ("class" =: "large centered") 
-              dValue <- do
-                dInitialLabel <- holdDyn "Initial: " never
-                plusMinus
+            let inputConfig =
+                  def
+                    & inputElementConfig_elementConfig
+                      . elementConfig_initialAttributes
+                      .~ ("class" =: "large centered")
+            (dValue, dNumberOfPlayers, eCreatePlayers) <-
+              elClass "div" "base-settings" $ mdo
+                dValue <- do
+                  dInitialLabel <- holdDyn "Initial: " never
+                  plusMinus
                     (dynText . fmap (T.pack . show))
                     layout
                     eInitHp
                     dInitialLabel
-              dNumberOfPlayers <- do
-                dNumberOfPlayersLabel <- holdDyn "Number of players: " never
-                plusMinus
+                dNumberOfPlayers <- do
+                  dNumberOfPlayersLabel <- holdDyn "Number of players: " never
+                  plusMinus
                     (dynText . fmap (T.pack . show))
                     layout
                     eInitPlayernumber
                     dNumberOfPlayersLabel
 
-              eCreatePlayers <- elClass "div" "button-row" $ 
-                                    buttonClass 
-                                        "centered-button" 
-                                        "Create Players"
+                eCreatePlayers <-
+                  elClass "div" "button-row" $
+                    buttonClass
+                      "centered-button"
+                      "Create Players"
+                pure (dValue, dNumberOfPlayers, eCreatePlayers)
+            dPlayers <- elClass "div" "player-settings" $ mdo
               dPlayersRaw <- elDynClass "div" "player-names" $ mdo
                 let widgets = playerWidgets inputConfig dNumberOfPlayers
                 let ePlayerCreation = current widgets <@ eCreatePlayers
@@ -156,18 +164,36 @@ startValue = mdo
                 pure $ fmap (map value) dPlayers
 
               ddPlayers <- fmap sequence <$> holdDyn [] (updated dPlayersRaw)
-              let dPlayers = join ddPlayers
-
-              eSetToInitial <- elClass "div" "button-row" $ 
-                                buttonClass 
-                                    "centered-button"
-                                    "Set to initial"
+              pure $ join ddPlayers
+            elClass "div" "button-row bottom" $ do
+              eSetToInitial <-
+                elClass "div" "button-row" $
+                  buttonClass
+                    "centered-button"
+                    "Set to initial"
               pure (dValue, eSetToInitial, dPlayers)
 
-playerWidgets :: (DomBuilder t m) => InputElementConfig EventResult t (DomBuilderSpace m) -> Dynamic t Int -> Dynamic t (m [InputElement EventResult (DomBuilderSpace m) t])
+playerWidgets ::
+  (DomBuilder t m, Reflex t) =>
+  InputElementConfig EventResult t (DomBuilderSpace m) ->
+  Dynamic t Int ->
+  Dynamic t (m [InputElement EventResult (DomBuilderSpace m) t])
 playerWidgets inputConfig dPlayerNumber = do
   playerNumber <- dPlayerNumber
-  pure $ replicateM playerNumber $ inputElement inputConfig 
+  pure $ mapM inputElement $ makePlayerInputConfigs playerNumber
+    where 
+          makePlayerInputConfig :: (DomSpace s, Reflex t) => Int -> InputElementConfig EventResult t s
+          makePlayerInputConfig i =
+              ( def
+                  & inputElementConfig_initialValue
+                  .~ "Player " <> (T.pack $ show i)
+              )
+          
+          makePlayerInputConfigs :: (DomSpace s, Reflex t) => Int -> [InputElementConfig EventResult t s]
+          makePlayerInputConfigs numberOfPlayers =  map
+                                        makePlayerInputConfig          
+                                        [1 .. numberOfPlayers]
+
 
 displayInputLine :: MonadWidget t m => Dynamic t (m (InputElement EventResult (DomBuilderSpace m) t)) -> m ()
 displayInputLine dInputLine = mdo
@@ -215,10 +241,10 @@ layout label number = mdo
   elClass "div" "settings-row" $ do
     dynText label
     elClass "span" "controls" $ do
-        eMinus <- buttonClass "button left-button" "-"
-        elClass "span" "number-display" number
-        ePlus <- buttonClass "button right-button" "+"
-        pure (eMinus, ePlus)
+      eMinus <- buttonClass "button left-button" "-"
+      elClass "span" "number-display" number
+      ePlus <- buttonClass "button right-button" "+"
+      pure (eMinus, ePlus)
 
 --layoutVertical :: (MonadWidget t m, DomBuilder t m) => Text -> m () -> m (Event t (), Event t ())
 layoutVertical label number = mdo

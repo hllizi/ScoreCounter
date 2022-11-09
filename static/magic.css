@@ -1,3 +1,5 @@
+html,body { height: 100%;}
+
 .centered {
     margin: 0 auto;
     display: block;
@@ -14,6 +16,7 @@
 
 .button-row {
     width: 100%;
+    flex: 1 1 auto;
 }
 .centered-button {
     margin:  auto;
@@ -23,22 +26,37 @@
 .settings-box {
     margin: auto;
     width: 100%;
+    min-height: 90%;
 }
 
 .header {
-    font-size: 2em;
+    font-size: 5em;
     text-align: center;
     background-color: light-blue;
 }
 
+.settings-box {
+    height: 90%;
+}
 .settings {
-    flex-direction: column;
+    height:90%
 }
 
+.base-settings {
+    height: 60%;
+    display: flex;
+    flex-direction: column;
+}
 .settings-row {
     display: flex;
     text-align: left;
     font-size: 4em;
+    flex: 1 1 auto
+}
+
+.bottom {
+    position: absolute;
+    bottom: 0;
 }
 
 .settings-row > .controls {
