@@ -101,7 +101,14 @@ mkHidden False = mempty
 startWidget :: MonadWidget t m => m ()
 startWidget = mdo
   elClass "div" "header" $ text "Settings"
-  (dValue, eSetToInitial, dPlayers) <- settingsWidget dSettingsActive
+  (dValue, eSetToInitial, dPlayers) <-
+   elClass "div" "settings-box" $ do
+   elDynAttr
+    "div"
+    ( ("class" =: "settings" <>)
+        . mkHidden
+        <$> (not <$> dSettingsActive)
+    ) $ settingsWidget dSettingsActive
   elDynAttr
     "table"
     (("class" =: "players" <>) . mkHidden <$> dSettingsActive)
@@ -128,15 +135,7 @@ settingsWidget dSettingsActive = mdo
 settingsBox :: MonadWidget t m => Dynamic t Bool 
                                -> Event t ()
                                -> m (Dynamic t Int, Event t (), Dynamic t [Text])
-settingsBox dSettingsActive ePostBuild = do
- elClass "div" "settings-box" $ do
-  elDynAttr
-    "div"
-    ( ("class" =: "settings" <>)
-        . mkHidden
-        <$> (not <$> dSettingsActive)
-    )
-    $ mdo
+settingsBox dSettingsActive ePostBuild = mdo
       let inputConfig =
             def
               & inputElementConfig_elementConfig
