@@ -56,7 +56,7 @@ frontend =
     }
 
 initialValue :: Int
-initialValue = 20
+initialValue = 10
 
 data HealthState = Good | Ok | Danger | HighDanger
 
@@ -98,29 +98,28 @@ mkHidden False = mempty
 
 startValue :: MonadWidget t m => m ()
 startValue = mdo
+  elClass "div" "header" $ text "Settings"
   eInit <- fmap (initialValue <$) getPostBuild
   (dValue, eSetToInitial, dPlayers) <- settingsWidget dSettingsActive
-  elDynAttr
-    "table"
-    (("class" =: "players" <>) . mkHidden <$> dSettingsActive)
-    blank
   elDynAttr
     "table"
     (("class" =: "players" <>) . mkHidden <$> dSettingsActive)
     $ do
       players layoutVertical dPlayers $ current dValue <@ eSetToInitial
 
-  dSettingsActive <- toggle True . leftmost $ [eSetToInitial, eBackToSettings]
-  (e, _) <- elAttr' "a" ("href" =: "") $ text "Back to settings"
-  let eBackToSettings = domEvent Click e
+  dSettingsActive <- elClass "div" "page-bottom" $ mdo
+    dSettingsActive <- toggle True . leftmost $ [eSetToInitial, eBackToSettings]
+    let eBackToSettings = domEvent Click e
+    (e, _) <- elAttr' "a" ("href" =: "") $ text "Back to settings"
+    pure dSettingsActive
   pure ()
   where
     settingsWidget :: MonadWidget t m => Dynamic t Bool -> m (Dynamic t Int, Event t (), Dynamic t [Text])
     settingsWidget dSettingsActive = mdo
-      eInitHp <- fmap (initialValue <$) getPostBuild
-      eInitPlayernumber <- fmap (2 <$) getPostBuild
+      ePostBuild <- getPostBuild
+      let eInitHp = initialValue <$ ePostBuild
+      let eInitPlayernumber = 2 <$ ePostBuild
       elClass "div" "settings-box" $ do
-        elClass "div" "header" $ text "Settings"
         elDynAttr
           "div"
           ( ("class" =: "settings" <>)
@@ -142,6 +141,7 @@ startValue = mdo
                     layout
                     eInitHp
                     dInitialLabel
+
                 dNumberOfPlayers <- do
                   dNumberOfPlayersLabel <- holdDyn "Number of players: " never
                   plusMinus
@@ -159,7 +159,7 @@ startValue = mdo
             dPlayers <- elClass "div" "player-settings" $ mdo
               dPlayersRaw <- elDynClass "div" "player-names" $ mdo
                 let widgets = playerWidgets inputConfig dNumberOfPlayers
-                let ePlayerCreation = current widgets <@ eCreatePlayers
+                let ePlayerCreation = current widgets <@ leftmost [eCreatePlayers, ePostBuild]
                 dPlayers <- widgetHold ((: []) <$> inputElement inputConfig) ePlayerCreation
                 pure $ fmap (map value) dPlayers
 
@@ -223,7 +223,7 @@ plusMinus ::
   Dynamic t Text ->
   m (Dynamic t Int)
 plusMinus numberFormat layout eInitial player = mdo
-  let change =
+  let eChange =
         leftmost
           [ const <$> eInitial,
             (+ 1) <$ ePlus,
@@ -235,7 +235,7 @@ plusMinus numberFormat layout eInitial player = mdo
               <$ eMinus
           ]
   (eMinus, ePlus) <- layout player (numberFormat dValue)
-  dValue <- foldDyn ($) initialValue change
+  dValue <- foldDyn ($) 0 eChange
   pure dValue
 
 layout label number = mdo
