@@ -109,7 +109,7 @@ data Settings = forall t.
 startWidget :: MonadWidget t m => m ()
 startWidget = mdo
   elClass "div" "header" $ text "Settings"
-  (dSettings, eSet) <-
+  dSettingsAndSetEvent <-
     elClass "div" "settings-box" $ do
       elDynAttr
         "div"
@@ -118,15 +118,16 @@ startWidget = mdo
             <$> (not <$> dSettingsActive)
         )
         $ settingsWidget dSettingsActive
+  eSet <- snd <$> sample (current dSettingsAndSetEvent)
   elDynAttr
     "table"
     (("class" =: "players" <>) . mkHidden <$> dSettingsActive)
     $ do
-       let dPlayers = settingsPlayers <$> dSettings
-       let dValue = settingsInitialHp <$> dSettings
-       let eSetToInitial = current dValue <@ eSet
-       players layoutVertical dPlayers eSetToInitial
-       pure eSetToInitial 
+      let dPlayers = settingsPlayers . fst <$> dSettingsAndSetEvent
+      let dValue = settingsInitialHp . fst <$> dSettingsAndSetEvent
+      let eSetToInitial = (current dValue <@) eSet
+      players layoutVertical dPlayers eSetToInitial
+        
 
   dSettingsActive <- elClass "div" "page-bottom" $ mdo
     dSettingsActive <- toggle True . leftmost $ [eSet, eBackToSettings]
@@ -140,7 +141,7 @@ startWidget = mdo
     pure dSettingsActive
   pure ()
 
-settingsWidget :: MonadWidget t m => Dynamic t Bool -> m ((Dynamic t Settings, Event t ()))
+settingsWidget :: MonadWidget t m => Dynamic t Bool -> m (Dynamic t (Settings, Event t ()))
 settingsWidget dSettingsActive = mdo
   ePostBuild <- getPostBuild
   let eInitPlayernumber = 2 <$ ePostBuild
@@ -150,7 +151,7 @@ settingsBox ::
   MonadWidget t m =>
   Dynamic t Bool ->
   Event t () ->
-  m ((Dynamic t Settings, Event t ()))
+  m (Dynamic t (Settings, Event t ()))
 settingsBox dSettingsActive ePostBuild = mdo
   let inputConfig =
         def
@@ -198,7 +199,7 @@ settingsBox dSettingsActive ePostBuild = mdo
         buttonClass
           "centered-button"
           "Set to initial"
-    pure $ (,) (Settings <$> dValue <*> dPlayers) eSetToInitial
+    pure $ (,) <$> (Settings <$> dValue <*> dPlayers) <*> pure eSetToInitial
 
 playerWidgets ::
   (DomBuilder t m, Reflex t) =>
