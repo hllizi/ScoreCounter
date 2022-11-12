@@ -2,6 +2,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecursiveDo #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -106,28 +107,40 @@ data Settings = forall t.
     settingsPlayers :: [Text]
   }
 
+data State
+  = forall t. StateSettings (Dynamic t (Settings, Event t ()))
+  | forall t. StateScoreTable (Dynamic t [Int])
+
 startWidget :: MonadWidget t m => m ()
 startWidget = mdo
   elClass "div" "header" $ text "Settings"
-  dSettingsAndSetEvent <-
-    elClass "div" "settings-box" $ do
-      elDynAttr
-        "div"
-        ( ("class" =: "settings" <>)
-            . mkHidden
-            <$> (not <$> dSettingsActive)
-        )
-        $ settingsWidget dSettingsActive
+  let sWdgt = settingsWidget dSettingsActive
+  let settingsWidgetFull = elClass "div" "settings-box" $ do
+        elDynAttr
+          "div"
+          ( ("class" =: "settings" <>)
+              . mkHidden
+              <$> (not <$> dSettingsActive)
+          )
+          $ do
+            sWdgt
+            pure ()
+
+  dSettingsAndSetEvent <- sWdgt
+  let dPlayers = settingsPlayers . fst <$> dSettingsAndSetEvent
+  let dValue = settingsInitialHp . fst <$> dSettingsAndSetEvent
+  let eSetToInitial = (current dValue <@) eSet
+  let playersWidget = players layoutVertical dPlayers eSetToInitial
+  let scoreTableWidgetFull =
+        elDynAttr
+          "table"
+          (("class" =: "players" <>) . mkHidden <$> dSettingsActive)
+          $ do
+            playersWidget
+            pure ()
   eSet <- snd <$> sample (current dSettingsAndSetEvent)
-  elDynAttr
-    "table"
-    (("class" =: "players" <>) . mkHidden <$> dSettingsActive)
-    $ do
-      let dPlayers = settingsPlayers . fst <$> dSettingsAndSetEvent
-      let dValue = settingsInitialHp . fst <$> dSettingsAndSetEvent
-      let eSetToInitial = (current dValue <@) eSet
-      players layoutVertical dPlayers eSetToInitial
-        
+
+  scoreTableWidgetFull
 
   dSettingsActive <- elClass "div" "page-bottom" $ mdo
     dSettingsActive <- toggle True . leftmost $ [eSet, eBackToSettings]
