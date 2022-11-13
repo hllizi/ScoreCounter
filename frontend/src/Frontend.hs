@@ -107,6 +107,8 @@ data Settings = forall t.
     settingsPlayers :: [Text]
   }
 
+dummySettings = Settings 0 []
+
 data State
   = forall t. StateSettings (Dynamic t (Settings, Event t ()))
   | forall t. StateScoreTable (Dynamic t [Int])
@@ -114,33 +116,18 @@ data State
 startWidget :: MonadWidget t m => m ()
 startWidget = mdo
   elClass "div" "header" $ text "Settings"
-  let sWdgt = settingsWidget dSettingsActive
   let settingsWidgetFull = elClass "div" "settings-box" $ do
-        elDynAttr
-          "div"
-          ( ("class" =: "settings" <>)
-              . mkHidden
-              <$> (not <$> dSettingsActive)
-          )
-          $ do
-            sWdgt
-            pure ()
+        settingsWidget dSettingsActive
 
-  dSettingsAndSetEvent <- sWdgt
   let dPlayers = settingsPlayers . fst <$> dSettingsAndSetEvent
   let dValue = settingsInitialHp . fst <$> dSettingsAndSetEvent
-  let eSetToInitial = (current dValue <@) eSet
+  let eSetToInitial = current dValue <@ eSet
   let playersWidget = players layoutVertical dPlayers eSetToInitial
   let scoreTableWidgetFull =
-        elDynAttr
-          "table"
-          (("class" =: "players" <>) . mkHidden <$> dSettingsActive)
-          $ do
-            playersWidget
-            pure ()
+        do
+          playersWidget
+          pure . pure $ (dummySettings, never)
   eSet <- snd <$> sample (current dSettingsAndSetEvent)
-
-  scoreTableWidgetFull
 
   dSettingsActive <- elClass "div" "page-bottom" $ mdo
     dSettingsActive <- toggle True . leftmost $ [eSet, eBackToSettings]
@@ -152,6 +139,17 @@ startWidget = mdo
             else "Back to Settings"
     (e, _) <- elAttr' "a" ("href" =: "") $ dynText dSwitchLinkText
     pure dSettingsActive
+
+  let switchToSettings = ffilter id (updated dSettingsActive)
+  let switchToScoreTable = ffilter not (updated dSettingsActive)
+
+  dSettingsAndSetEvent <-
+    join $
+      widgetHold settingsWidgetFull . leftmost $
+        [ settingsWidgetFull <$ switchToSettings,
+          scoreTableWidgetFull <$ switchToScoreTable
+        ]
+
   pure ()
 
 settingsWidget :: MonadWidget t m => Dynamic t Bool -> m (Dynamic t (Settings, Event t ()))
@@ -303,7 +301,8 @@ players ::
   (Dynamic t Text -> m () -> m (Event t (), Event t ())) ->
   Dynamic t [Text] ->
   Event t Int ->
-  m (Dynamic t [Int])
+  -- m (Dynamic t [Int])
+  m ()
 players layout players eInitial = mdo
   dInitial <- holdDyn initialHp eInitial
   list <-
@@ -312,6 +311,7 @@ players layout players eInitial = mdo
       (displayRow dInitial)
   let list2 = sequence <$> list
   pure $ join list2
+  pure ()
   where
     displayRow dInitial = do
       plusMinus
