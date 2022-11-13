@@ -113,20 +113,30 @@ data State
   = forall t. StateSettings (Dynamic t (Settings, Event t ()))
   | forall t. StateScoreTable (Dynamic t [Int])
 
-startWidget :: MonadWidget t m => m ()
-startWidget = mdo
-  elClass "div" "header" $ text "Settings"
-  let settingsWidgetFull = elClass "div" "settings-box" $ do
-        settingsWidget dSettingsActive
 
-  let dPlayers = settingsPlayers . fst <$> dSettingsAndSetEvent
-  let dValue = settingsInitialHp . fst <$> dSettingsAndSetEvent
-  let eSetToInitial = current dValue <@ eSet
-  let playersWidget = players layoutVertical dPlayers eSetToInitial
-  let scoreTableWidgetFull =
+scoreTableWidgetFull :: MonadWidget t m => 
+                            Dynamic t [Text]
+                        ->  Event t Int
+                        ->  m (Dynamic t (Settings, Event t ()))
+scoreTableWidgetFull dPlayers eSetToInitial = 
         do
           playersWidget
           pure . pure $ (dummySettings, never)
+  where playersWidget = players layoutVertical dPlayers eSetToInitial
+
+settingsWidgetFull :: MonadWidget t m => 
+                         Dynamic t Bool 
+                      -> m (Dynamic t (Settings, Event t ()))
+settingsWidgetFull dSettingsActive = 
+    elClass "div" "settings-box" $ do
+        settingsWidget dSettingsActive
+
+startWidget :: MonadWidget t m => m ()
+startWidget = mdo
+  elClass "div" "header" $ text "Settings"
+  let dPlayers = settingsPlayers . fst <$> dSettingsAndSetEvent
+  let dValue = settingsInitialHp . fst <$> dSettingsAndSetEvent
+  let eSetToInitial = current dValue <@ eSet
   eSet <- snd <$> sample (current dSettingsAndSetEvent)
 
   dSettingsActive <- elClass "div" "page-bottom" $ mdo
@@ -143,13 +153,12 @@ startWidget = mdo
   let switchToSettings = ffilter id (updated dSettingsActive)
   let switchToScoreTable = ffilter not (updated dSettingsActive)
 
-  dSettingsAndSetEvent <-
-    join $
-      widgetHold settingsWidgetFull . leftmost $
-        [ settingsWidgetFull <$ switchToSettings,
-          scoreTableWidgetFull <$ switchToScoreTable
+  ddSettingsAndSetEvent <-
+      widgetHold (settingsWidgetFull dSettingsActive) . leftmost $
+        [ (settingsWidgetFull dSettingsActive) <$ switchToSettings,
+          (scoreTableWidgetFull dPlayers eSetToInitial) <$ switchToScoreTable
         ]
-
+  let dSettingsAndSetEvent = join ddSettingsAndSetEvent
   pure ()
 
 settingsWidget :: MonadWidget t m => Dynamic t Bool -> m (Dynamic t (Settings, Event t ()))
