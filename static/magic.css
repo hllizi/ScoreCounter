@@ -1,45 +1,105 @@
+html,body { height: 100%;}
+
+.centered {
+    margin: 0 auto;
+    display: block;
+}
+
 .large {
     font-size: 2em;
-}
+} 
 
 .square-button {
     width: 100px;
     height: 100px;
 }
 
-.header {
+.button-row {
+    width: 100%;
+    flex: 1 1 auto;
+}
+.centered-button {
+    margin:  auto;
+    display: block;
+    font-size: 4em;
+}
+.settings-box {
     margin: auto;
-    width: 60%;
+    width: 100%;
+    min-height: 90%;
 }
 
+.header {
+    font-size: 5em;
+    text-align: center;
+    background-color: light-blue;
+}
+
+.settings-box {
+    height: 90%;
+}
 .settings {
+    height:90%
 }
 
-.settings-format {
+.base-settings {
+    height: 60%;
+    display: flex;
     flex-direction: column;
-
+}
+.settings-row {
+    display: flex;
+    text-align: left;
+    font-size: 4em;
+    flex: 1 1 auto
 }
 
-.settings-format > .choose-value {
-                display: flex;
-                text-align: center;
+.bottom {
+    position: absolute;
+    bottom: 0;
+}
+
+.settings-row > .controls {
+                margin-left: auto;
+                margin-right: 0;
                 order: 1;
+                width: 30%;
                 }
-.settings-format > .set-value {
-                text-align: center;
-                order: 2;}
 
-.settings-format > .player-names {
+.settings-row > .controls > .button {
+                font-size: 1em;
+                width: 20%;
 }
+.settings-row > .controls > .left-button {
+                margin-left: 0;
+                margin-right: auto;
+}
+
+.settings-row > .controls > .right-button{
+                margin-left: auto;
+                margin-right: 0;
+}
+
+.settings-row > .controls > .number-display {
+                width: 30%;
+                margin-right: auto;
+                margin-left: 0;
+                display: inline-block;
+                text-align: right;
+}
+
 
 .player-names {
+    width: 60%;
+    margin: auto;
+    display: flex;
+    flex-direction: column;
 }
 
 .name-field {
+    font-size: 4em;
     }
 
-.players {
-}
 
 .player-container {
     width: 60%;
