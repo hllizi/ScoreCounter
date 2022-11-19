@@ -75,13 +75,6 @@ instance Show HealthState where
   show Danger = "danger"
   show HighDanger = "high-danger"
 
-healthState :: Int -> Int -> HealthState
-healthState upper hp
-  | hp > 2 * (upper `div` 3) = Good
-  | hp > upper `div` 3 = Ok
-  | hp < upper `div` 10 = HighDanger
-  | otherwise = Danger
-
 button :: MonadWidget t m => Text -> m (Event t ())
 button = buttonClass ""
 
@@ -113,20 +106,20 @@ data Settings = Settings
 
 initialSettings = Settings initialHp []
 
-scoreTableWidgetFull ::
+scoreBoardWidgetFull ::
   MonadWidget t m =>
   Dynamic t Settings ->
   Dynamic t [Text] ->
   Event t Int ->
   Event t [Text] ->
   m (Event t Settings)
-scoreTableWidgetFull dSettings dPlayers eInitialHp eListOfPlayers =
+scoreBoardWidgetFull dSettings dPlayers eInitialHp eListOfPlayers =
   do
     ePostBuild <- getPostBuild
     playersWidget
     pure $ (current dSettings) <@ ePostBuild
   where
-    playersWidget = players layoutVertical dPlayers (settingsInitialHp <$> dSettings)
+    playersWidget = scoreBoard layoutVertical dPlayers (settingsInitialHp <$> dSettings)
 
 settingsWidgetFull ::
   MonadWidget t m =>
@@ -164,7 +157,7 @@ startWidget = mdo
   deSettingsAndSetEvent <-
     widgetHold settingsWidgetFull . leftmost $
       [ settingsWidgetFull <$ switchToSettings,
-        scoreTableWidgetFull dSettingsAndSetEvent dPlayers eInitialHp eListOfPlayers <$ switchToScoreTable
+        scoreBoardWidgetFull dSettingsAndSetEvent dPlayers eInitialHp eListOfPlayers <$ switchToScoreTable
       ]
 
   let eSettingsAndSetEvent = switchDyn deSettingsAndSetEvent
@@ -188,7 +181,7 @@ settingsWidget = mdo
         dInitialLabel <- holdDyn "Initial: " never
         plusMinus
           (dynText . fmap (T.pack . show))
-          layout
+          layoutHorizontal
           dInitialHp
           dInitialLabel
 
@@ -197,7 +190,7 @@ settingsWidget = mdo
         dNumberOfPlayersLabel <- holdDyn "Number of players: " never
         plusMinus
           (dynText . fmap (T.pack . show))
-          layout
+          layoutHorizontal
           dInitialNumberOfPlayers
           dNumberOfPlayersLabel
 
@@ -271,6 +264,7 @@ inputElementSource =
           .~ ("class" =: "name-field")
    in inputElement namefieldConf
 
+--  Use a function to format a number, a function to layout the parts, a Dynamic t Int to provide the start value and a label and use them to produce +/- controls for adjusting a labeled numerical value
 plusMinus ::
   (DomBuilder t m, PostBuild t m, MonadHold t m, MonadFix m) =>
   (Dynamic t Int -> m ()) ->
@@ -278,24 +272,29 @@ plusMinus ::
   Dynamic t Int -> -- Initial value
   Dynamic t Text -> -- Text label
   m (Dynamic t Int)
-plusMinus numberFormat layout dInitial label = mdo
+plusMinus numberFormat layout dInit label = mdo
   ePostBuild <- getPostBuild
   let eChange =
         leftmost
-          [ const <$> tagPromptlyDyn dInitial ePostBuild,
+          [ const <$> current dInit <@ ePostBuild,
             (+ 1) <$ ePlus,
-            ( \x ->
-                if x > 0
-                  then x - 1
-                  else x
-            )
-              <$ eMinus
+            limitedDec <$ eMinus
           ]
   (eMinus, ePlus) <- layout label (numberFormat dValue)
   dValue <- foldDyn ($) 0 eChange
   pure dValue
+  where
+    limitedDec x
+      | x > 0 = x - 1
+      | otherwise = x
 
-layout label number = mdo
+-- display +/- controls (horizontally arranged)
+layoutHorizontal ::
+  (MonadWidget t m, DomBuilder t m) =>
+  Dynamic t Text ->
+  m a ->
+  m (Event t (), Event t ())
+layoutHorizontal label number = mdo
   elClass "div" "settings-row" $ do
     dynText label
     elClass "span" "controls" $ do
@@ -304,7 +303,8 @@ layout label number = mdo
       ePlus <- buttonClass "button right-button" "+"
       pure (eMinus, ePlus)
 
---layoutVertical :: (MonadWidget t m, DomBuilder t m) => Text -> m () -> m (Event t (), Event t ())
+-- display +/- controls vertically arranged
+layoutVertical :: (MonadWidget t m, DomBuilder t m) => Dynamic t Text -> m a -> m (Event t (), Event t ())
 layoutVertical label number = mdo
   elClass "div" "large" $ do
     elClass "tr" "player-container" $ mdo
@@ -314,15 +314,14 @@ layoutVertical label number = mdo
       ePlus <- elClass "td" "player-plus" $ button "+"
       pure (eMinus, ePlus)
 
-players ::
+-- Display the players in a list, with scores and controls to modifiy them
+scoreBoard ::
   (PostBuild t m, MonadHold t m, MonadFix m, DomBuilder t m) =>
   (Dynamic t Text -> m () -> m (Event t (), Event t ())) ->
   Dynamic t [Text] ->
   Dynamic t Int ->
-  -- m (Dynamic t [Int])
   m ()
-players layout players dInitial = mdo
-  --dInitial <- holdDyn initialHp dInitial
+scoreBoard layout players dInitial = mdo
   list <-
     simpleList
       players
@@ -337,10 +336,18 @@ players layout players dInitial = mdo
         layout
         dInitial
 
-playerHealthClass dInitial dPlayer = do
-  max <- dInitial
-  playerHp <- dPlayer
-  pure $ T.pack . show $ healthState max playerHp
+-- determine the class to use for the score. (for adjusting colour to the amount of HP)
+playerHealthClass dInitialHp dCurrentHp = do
+  max <- dInitialHp
+  currentHp <- dCurrentHp
+  pure $ T.pack . show $ healthState max currentHp
+  where
+    healthState :: Int -> Int -> HealthState
+    healthState upper hp
+      | hp > 2 * (upper `div` 3) = Good
+      | hp > upper `div` 3 = Ok
+      | hp < upper `div` 10 = HighDanger
+      | otherwise = Danger
 
 formatHp dInitial dPlayer = mdo
   let dPlayerClass = playerHealthClass dInitial dPlayer
