@@ -116,10 +116,10 @@ scoreBoardWidgetFull ::
 scoreBoardWidgetFull dSettings dPlayers eInitialHp eListOfPlayers =
   do
     ePostBuild <- getPostBuild
-    playersWidget
+    dyn playersWidget
     pure $ (current dSettings) <@ ePostBuild
   where
-    playersWidget = scoreBoard layoutVertical dPlayers (settingsInitialHp <$> dSettings)
+    playersWidget = ((scoreBoard layoutVertical dPlayers) . settingsInitialHp) <$> dSettings
 
 settingsWidgetFull ::
   MonadWidget t m =>
@@ -176,22 +176,20 @@ settingsWidget = mdo
             .~ ("class" =: "large centered")
   (dHp, dNumberOfPlayers, eCreatePlayers) <-
     elClass "div" "base-settings" $ mdo
-      dInitialHp <- holdDyn (initialSettings ^. #settingsInitialHp) never
       dHp <- do
         dInitialLabel <- holdDyn "Initial: " never
         plusMinus
           (dynText . fmap (T.pack . show))
           layoutHorizontal
-          dInitialHp
+          (initialSettings ^. #settingsInitialHp)
           dInitialLabel
 
-      dInitialNumberOfPlayers <- holdDyn initialNumberOfPlayers never
       dNumberOfPlayers <- do
         dNumberOfPlayersLabel <- holdDyn "Number of players: " never
         plusMinus
           (dynText . fmap (T.pack . show))
           layoutHorizontal
-          dInitialNumberOfPlayers
+          initialNumberOfPlayers 
           dNumberOfPlayersLabel
 
       eCreatePlayers <-
@@ -269,14 +267,14 @@ plusMinus ::
   (DomBuilder t m, PostBuild t m, MonadHold t m, MonadFix m) =>
   (Dynamic t Int -> m ()) ->
   (Dynamic t Text -> m () -> m (Event t (), Event t ())) -> -- Function to layout the control element
-  Dynamic t Int -> -- Initial value
+  Int -> -- Initial value
   Dynamic t Text -> -- Text label
   m (Dynamic t Int)
-plusMinus numberFormat layout dInit label = mdo
+plusMinus numberFormat layout init label = mdo
   ePostBuild <- getPostBuild
   let eChange =
         leftmost
-          [ const <$> current dInit <@ ePostBuild,
+          [ const init <$ ePostBuild,
             (+ 1) <$ ePlus,
             limitedDec <$ eMinus
           ]
@@ -319,26 +317,25 @@ scoreBoard ::
   (PostBuild t m, MonadHold t m, MonadFix m, DomBuilder t m) =>
   (Dynamic t Text -> m () -> m (Event t (), Event t ())) ->
   Dynamic t [Text] ->
-  Dynamic t Int ->
+  Int ->
   m ()
-scoreBoard layout players dInitial = mdo
+scoreBoard layout players init = mdo
   list <-
     simpleList
       players
-      (displayRow dInitial)
+      (displayRow init)
   let list2 = sequence <$> list
   pure $ join list2
   pure ()
   where
-    displayRow dInitial = do
-      plusMinus
-        (formatHp dInitial)
+    displayRow = do
+      pure $ plusMinus
+        (formatHp init)
         layout
-        dInitial
+        init
 
 -- determine the class to use for the score. (for adjusting colour to the amount of HP)
-playerHealthClass dInitialHp dCurrentHp = do
-  max <- dInitialHp
+playerHealthClass max dCurrentHp = do
   currentHp <- dCurrentHp
   pure $ T.pack . show $ healthState max currentHp
   where
@@ -349,6 +346,6 @@ playerHealthClass dInitialHp dCurrentHp = do
       | hp < upper `div` 10 = HighDanger
       | otherwise = Danger
 
-formatHp dInitial dPlayer = mdo
-  let dPlayerClass = playerHealthClass dInitial dPlayer
+formatHp initial dPlayer = mdo
+  let dPlayerClass = playerHealthClass initial dPlayer
   elDynClass "span" dPlayerClass $ dynText $ T.pack . show <$> dPlayer
