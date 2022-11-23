@@ -126,6 +126,25 @@ settingsWidget =
   elClass "div" "settings-box" $ do
     theWidget
   where
+    healtWidget = do
+            dInitialLabel <- holdDyn "Initial: " never
+            plusMinus
+              (dynText . fmap (T.pack . show))
+              layoutHorizontal
+              (initialSettings ^. #settingsInitialHp)
+              dInitialLabel
+    numberOfPlayersWidget = do 
+            dNumberOfPlayersLabel <- holdDyn "Number of players: " never
+            plusMinus
+              (dynText . fmap (T.pack . show))
+              layoutHorizontal
+              defaultNumberOfPlayers
+              dNumberOfPlayersLabel
+    createButtonWidget = do
+            elClass "div" "button-row" $
+              buttonClass
+                "centered-button"
+                "Create Players"
     theWidget = mdo
       ePostBuild <- getPostBuild
       let inputConfig =
@@ -135,33 +154,15 @@ settingsWidget =
                 .~ ("class" =: "large centered")
       (dHealth, dNumberOfPlayers, eCreatePlayers) <-
         elClass "div" "base-settings" $ mdo
-          dHealth <- do
-            dInitialLabel <- holdDyn "Initial: " never
-            plusMinus
-              (dynText . fmap (T.pack . show))
-              layoutHorizontal
-              (initialSettings ^. #settingsInitialHp)
-              dInitialLabel
-
-          dNumberOfPlayers <- do
-            dNumberOfPlayersLabel <- holdDyn "Number of players: " never
-            plusMinus
-              (dynText . fmap (T.pack . show))
-              layoutHorizontal
-              defaultNumberOfPlayers
-              dNumberOfPlayersLabel
-
-          eCreatePlayers <-
-            elClass "div" "button-row" $
-              buttonClass
-                "centered-button"
-                "Create Players"
+          dHealth <- healtWidget
+          dNumberOfPlayers <- numberOfPlayersWidget
+          eCreatePlayers <- createButtonWidget
           pure (dHealth, dNumberOfPlayers, eCreatePlayers)
 
       -- Input fields for the player names
       dPlayers <- elClass "div" "player-settings" $ mdo
         dPlayersRaw <- elDynClass "div" "player-names" $ mdo
-          dPlayers <- widgetHold (pure . pure <$> updated inputWidgets) ePlayerCreation
+          dPlayers <- widgetHold (pure []) ePlayerCreation
           let inputWidgets = playerWidgets inputConfig <$> dNumberOfPlayers
           let ePlayerCreation = tagPromptlyDyn inputWidgets $ leftmost [eCreatePlayers, ePostBuild]
           pure $ fmap (map value) dPlayers
