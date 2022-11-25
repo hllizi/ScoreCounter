@@ -241,11 +241,6 @@ playerWidgets inputConfig dPlayerNumber = do
         makePlayerInputConfig
         [1 .. numberOfPlayers]
 
-displayInputLine :: MonadWidget t m => Dynamic t (m (InputElement EventResult (DomBuilderSpace m) t)) -> m ()
-displayInputLine dInputLine = mdo
-  text "Dynte Baal"
-  dyn_ dInputLine
-
 testWidget :: MonadWidget t m => Dynamic t (m ())
 testWidget = pure $ do
   inputz <- inputElement def
@@ -317,27 +312,27 @@ scoreBoard ::
   Dynamic t [Text] ->
   Int ->
   m ()
-scoreBoard layout players init = mdo
+scoreBoard layout players initialHp = mdo
   list <-
     simpleList
       players
       (displayRow init)
   let list2 = sequence <$> list
-  pure $ join list2
+  _ <- pure $ join list2
   pure ()
   where
     displayRow = do
       pure $
         plusMinus
-          (formatHp init)
+          (formatHp initialHp)
           layout
-          init
+          initialHp
 
 -- determine the class to use for the score. (for adjusting colour to the amount of HP)
-playerHealthClass max dCurrentHp = do
-  currentHp <- dCurrentHp
-  pure $ T.pack . show $ healthState max currentHp
+playerHealthClass :: (Functor f) => Int -> f Int -> f Text
+playerHealthClass max dCurrentHp = makeClassString <$> dCurrentHp
   where
+    makeClassString = T.pack . show . healthState max 
     healthState :: Int -> Int -> HealthState
     healthState upper hp
       | hp > 2 * (upper `div` 3) = Good
