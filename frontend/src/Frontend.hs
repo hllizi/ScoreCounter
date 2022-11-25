@@ -117,7 +117,7 @@ scoreBoardWidget dSettings dPlayers eInitialHp eListOfPlayers =
     _ <- dyn theWidget
     pure $ current dSettings <@ ePostBuild
   where
-    theWidget = scoreBoard layoutVertical dPlayers . settingsInitialHp <$> dSettings
+    theWidget = scoreBoard layoutHorizontal dPlayers . settingsInitialHp <$> dSettings
 
 settingsWidget ::
   MonadWidget t m =>
