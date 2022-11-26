@@ -145,8 +145,8 @@ settingsWidget =
           let ePlayerCreation = tagPromptlyDyn inputWidgets $ leftmost [eCreatePlayers, ePostBuild]
           pure $ fmap (map value) dPlayers
 
-        ddPlayers <- fmap sequence <$> holdDyn [] (updated dPlayersRaw)
-        pure $ join ddPlayers
+        dPlayers <- (sequence =<<) <$> holdDyn [] (updated dPlayersRaw)
+        pure  dPlayers
 
       let settings = Settings <$> dHealth <*> dPlayers
       -- The button to set up an switch to the score board.
