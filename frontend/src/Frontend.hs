@@ -123,29 +123,7 @@ settingsWidget ::
   MonadWidget t m =>
   m (Event t Settings)
 settingsWidget =
-  elClass "div" "settings-box" $ do
-    theWidget
-  where
-    healtWidget = do
-            dInitialLabel <- holdDyn "Initial: " never
-            plusMinus
-              (dynText . fmap (T.pack . show))
-              layoutHorizontal
-              (initialSettings ^. #settingsInitialHp)
-              dInitialLabel
-    numberOfPlayersWidget = do 
-            dNumberOfPlayersLabel <- holdDyn "Number of players: " never
-            plusMinus
-              (dynText . fmap (T.pack . show))
-              layoutHorizontal
-              defaultNumberOfPlayers
-              dNumberOfPlayersLabel
-    createButtonWidget = do
-            elClass "div" "button-row" $
-              buttonClass
-                "centered-button"
-                "Create Players"
-    theWidget = mdo
+  elClass "div" "settings-box" $ mdo
       ePostBuild <- getPostBuild
       let inputConfig =
             def
@@ -154,7 +132,7 @@ settingsWidget =
                 .~ ("class" =: "large centered")
       (dHealth, dNumberOfPlayers, eCreatePlayers) <-
         elClass "div" "base-settings" $ mdo
-          dHealth <- healtWidget
+          dHealth <- healthWidget
           dNumberOfPlayers <- numberOfPlayersWidget
           eCreatePlayers <- createButtonWidget
           pure (dHealth, dNumberOfPlayers, eCreatePlayers)
@@ -179,6 +157,26 @@ settingsWidget =
               "centered-button"
               "Set to initial"
         pure $ current settings <@ eSetToInitial
+  where
+    healthWidget = do
+            dInitialLabel <- holdDyn "Initial: " never
+            plusMinus
+              (dynText . fmap (T.pack . show))
+              layoutHorizontal
+              (initialSettings ^. #settingsInitialHp)
+              dInitialLabel
+    numberOfPlayersWidget = do 
+            dNumberOfPlayersLabel <- holdDyn "Number of players: " never
+            plusMinus
+              (dynText . fmap (T.pack . show))
+              layoutHorizontal
+              defaultNumberOfPlayers
+              dNumberOfPlayersLabel
+    createButtonWidget = do
+            elClass "div" "button-row" $
+              buttonClass
+                "centered-button"
+                "Create Players"
 
 -- | The start widget is the main Widget that ties everything together
 startWidget :: MonadWidget t m => m ()
