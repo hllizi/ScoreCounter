@@ -62,7 +62,7 @@ frontend =
     }
 
 initialHp :: Int
-initialHp = 10
+initialHp = 20
 
 defaultNumberOfPlayers :: Int
 defaultNumberOfPlayers = 2
@@ -216,7 +216,7 @@ startWidget = mdo
     makeHeaderText :: Bool -> Text
     makeHeaderText settingsActive
      | settingsActive = "Settings"
-     | not settingsActive  = "Scoreboard"
+     | otherwise  = "Scoreboard"
 
 -- A Dynamic list of input elements with the provided configuration inputConfig and as many elements as specified by the provided Dynamic t Int
 playerWidgets ::
