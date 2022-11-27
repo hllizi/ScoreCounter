@@ -159,7 +159,7 @@ settingsWidget =
         pure $ current settings <@ eSetToInitial
   where
     healthWidget = do
-            dInitialLabel <- holdDyn "Initial: " never
+            dInitialLabel <- holdDyn "Initial HP: " never
             plusMinus
               (dynText . fmap (T.pack . show))
               layoutHorizontal
