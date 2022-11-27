@@ -1,5 +1,7 @@
 html,body { height: 100%;
-            background-color: #55FF55;}
+            background-color: #55FF55;
+            font-family: Sans-Serif;
+        }
 
 button {
     background-color: #000077;
@@ -15,6 +17,7 @@ input {
     font-size: 5em;
     text-align: center;
     background-color: black;
+    margin-bottom: 1em;
     color: #AAAAFF
 }
 
