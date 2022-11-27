@@ -130,3 +130,7 @@ html,body { height: 100%;}
 .high-danger {
     color: purple
 }
+
+.page-bottom {
+    text-align: center
+}

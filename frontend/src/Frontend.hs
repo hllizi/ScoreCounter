@@ -189,17 +189,6 @@ startWidget = mdo
   let eListOfPlayers = tag (current dPlayers) eSet
   let eSet = () <$ eSettingsAndSetEvent
 
-  dSettingsActive <- elClass "div" "page-bottom" $ mdo
-    dSettingsActive <- toggle True . leftmost $ [eSet, eBackToSettings]
-    let eBackToSettings = domEvent Click e
-    let dSwitchLinkText = do
-          settingsActive <- dSettingsActive
-          if settingsActive
-            then "Switch to score board"
-            else "Back to Settings"
-    (e, _) <- elAttr' "a" ("href" =: "") $ dynText dSwitchLinkText
-    pure dSettingsActive
-
   let switchToSettings = ffilter id (updated dSettingsActive)
   let switchToScoreTable = ffilter not (updated dSettingsActive)
 
@@ -211,7 +200,16 @@ startWidget = mdo
 
   let eSettingsAndSetEvent = switchDyn deSettingsAndSetEvent
   dSettingsAndSetEvent <- holdDyn initialSettings eSettingsAndSetEvent
-  el "div" $ dynText $ T.pack . show . settingsInitialHp <$> dSettingsAndSetEvent
+  dSettingsActive <- elClass "div" "page-bottom" $ mdo
+    dSettingsActive <- toggle True . leftmost $ [eSet, eBackToSettings]
+    let eBackToSettings = domEvent Click e
+    let dSwitchLinkText = do
+          settingsActive <- dSettingsActive
+          if settingsActive
+            then "Switch to score board"
+            else "New Scoreboard"
+    (e, _) <- elAttr' "a" ("href" =: "") $ dynText dSwitchLinkText
+    pure dSettingsActive
   pure ()
 
 -- A Dynamic list of input elements with the provided configuration inputConfig and as many elements as specified by the provided Dynamic t Int
@@ -228,9 +226,9 @@ playerWidgets inputConfig dPlayerNumber = do
     makePlayerInputConfig :: Int -> InputElementConfig EventResult t (DomBuilderSpace m)
     makePlayerInputConfig i =
       inputConfig
-        & inputElementConfig_elementConfig
-          . elementConfig_initialAttributes
-        .~ ("class" =: "name-field" <> "placeholder" =: ("Player " <> T.pack (show i)))
+        & inputElementConfig_initialValue .~ ("Player " <> T.pack (show i))
+        & inputElementConfig_elementConfig 
+            . elementConfig_initialAttributes .~ ("class" =: "name-field")
 
     -- make inputs for all players
     makePlayerInputConfigs :: Int -> [InputElementConfig EventResult t (DomBuilderSpace m)]
