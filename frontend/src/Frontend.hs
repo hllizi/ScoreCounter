@@ -78,7 +78,7 @@ instance Show HealthState where
   show HighDanger = "high-danger"
 
 button :: MonadWidget t m => Text -> m (Event t ())
-button = buttonClass ""
+button = buttonClass "rounded-corners"
 
 buttonClass ::
   MonadWidget t m =>
@@ -117,7 +117,7 @@ scoreBoardWidget dSettings dPlayers eInitialHp eListOfPlayers =
     _ <- dyn theWidget
     pure $ current dSettings <@ ePostBuild
   where
-    theWidget = scoreBoard layoutHorizontal dPlayers . settingsInitialHp <$> dSettings
+    theWidget = scoreBoard (layoutHorizontal "player-row") dPlayers . settingsInitialHp <$> dSettings
 
 settingsWidget ::
   MonadWidget t m =>
@@ -127,9 +127,6 @@ settingsWidget =
       ePostBuild <- getPostBuild
       let inputConfig =
             def
-              & inputElementConfig_elementConfig
-                . elementConfig_initialAttributes
-                .~ ("class" =: "large centered")
       (dHealth, dNumberOfPlayers, eCreatePlayers) <-
         elClass "div" "base-settings" $ mdo
           dHealth <- healthWidget
@@ -154,7 +151,7 @@ settingsWidget =
         eSetToInitial <-
           elClass "div" "button-row" $
             buttonClass
-              "centered-button"
+              "centered-button rounded-corners"
               "Set to initial"
         pure $ current settings <@ eSetToInitial
   where
@@ -162,20 +159,20 @@ settingsWidget =
             dInitialLabel <- holdDyn "Initial HP: " never
             plusMinus
               (dynText . fmap (T.pack . show))
-              layoutHorizontal
+              (layoutHorizontal "")
               (initialSettings ^. #settingsInitialHp)
               dInitialLabel
     numberOfPlayersWidget = do 
             dNumberOfPlayersLabel <- holdDyn "Number of players: " never
             plusMinus
               (dynText . fmap (T.pack . show))
-              layoutHorizontal
+              (layoutHorizontal "")
               defaultNumberOfPlayers
               dNumberOfPlayersLabel
     createButtonWidget = do
             elClass "div" "button-row" $
               buttonClass
-                "centered-button"
+                "centered-button rounded-corners"
                 "Create Players"
 
 -- | The start widget is the main Widget that ties everything together
@@ -235,7 +232,7 @@ playerWidgets inputConfig dPlayerNumber = do
       inputConfig
         & inputElementConfig_initialValue .~ ("Player " <> T.pack (show i))
         & inputElementConfig_elementConfig 
-            . elementConfig_initialAttributes .~ ("class" =: "name-field")
+            . elementConfig_initialAttributes .~ ("class" =: "name-field rounded-corners")
 
     -- make inputs for all players
     makePlayerInputConfigs :: Int -> [InputElementConfig EventResult t (DomBuilderSpace m)]
@@ -285,16 +282,17 @@ plusMinus numberFormat layout init label = mdo
 -- display +/- controls (horizontally arranged)
 layoutHorizontal ::
   (MonadWidget t m, DomBuilder t m) =>
+  Text -> 
   Dynamic t Text ->
   m a ->
   m (Event t (), Event t ())
-layoutHorizontal label number = mdo
-  elClass "div" "quantity-row" $ do
+layoutHorizontal classes label number = mdo
+  elClass "div" ("quantity-row" <> " " <> classes) $ do
     dynText label
-    elClass "span" "controls" $ do
-      eMinus <- buttonClass "button left-button" "-"
+    elClass "div" "controls" $ do
+      eMinus <- buttonClass "button left-button rounded-corners" "-"
       elClass "span" "number-display" number
-      ePlus <- buttonClass "button right-button" "+"
+      ePlus <- buttonClass "button right-button rounded-corners" "+"
       pure (eMinus, ePlus)
 
 -- display +/- controls vertically arranged

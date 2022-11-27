@@ -8,6 +8,9 @@ button {
     color: #CCCCCC;
 }
 
+.rounded-corners {
+    border-radius: 10px;
+}
 input {
     background-color: #AA0000;
     color: #CCCCCC;
@@ -18,7 +21,7 @@ input {
     text-align: center;
     background-color: black;
     margin-bottom: 1em;
-    color: #AAAAFF
+    color: #AAAAFF;
 }
 
 .centered {
@@ -58,8 +61,14 @@ input {
     display: flex;
     text-align: left;
     font-size: 4em;
-    flex: 1 1 auto
+    flex: 1 1 auto;
 }
+
+.player-row {
+    background-color: #BBFFBB;
+    margin: 2px;
+}
+
 
 .bottom {
     position: absolute;
