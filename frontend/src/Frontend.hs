@@ -181,7 +181,8 @@ settingsWidget =
 -- | The start widget is the main Widget that ties everything together
 startWidget :: MonadWidget t m => m ()
 startWidget = mdo
-  elClass "div" "header" $ text "Settings"
+  let dHeaderText = makeHeaderText <$> dSettingsActive
+  elClass "div" "header" $ dynText dHeaderText
 
   let dPlayers = settingsPlayers <$> dSettingsAndSetEvent
   let dHp = settingsInitialHp <$> dSettingsAndSetEvent
@@ -211,6 +212,11 @@ startWidget = mdo
     (e, _) <- elAttr' "a" ("href" =: "") $ dynText dSwitchLinkText
     pure dSettingsActive
   pure ()
+   where
+    makeHeaderText :: Bool -> Text
+    makeHeaderText settingsActive
+     | settingsActive = "Settings"
+     | not settingsActive  = "Scoreboard"
 
 -- A Dynamic list of input elements with the provided configuration inputConfig and as many elements as specified by the provided Dynamic t Int
 playerWidgets ::
