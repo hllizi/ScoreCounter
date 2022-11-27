@@ -182,7 +182,8 @@ settingsWidget =
 startWidget :: MonadWidget t m => m ()
 startWidget = mdo
   let dHeaderText = makeHeaderText <$> dSettingsActive
-  elClass "div" "header" $ dynText dHeaderText
+  elAttr "div" ("id" =: "header") $ dynText dHeaderText
+  
 
   let dPlayers = settingsPlayers <$> dSettingsAndSetEvent
   let dHp = settingsInitialHp <$> dSettingsAndSetEvent
@@ -201,7 +202,7 @@ startWidget = mdo
 
   let eSettingsAndSetEvent = switchDyn deSettingsAndSetEvent
   dSettingsAndSetEvent <- holdDyn initialSettings eSettingsAndSetEvent
-  dSettingsActive <- elClass "div" "page-bottom" $ mdo
+  dSettingsActive <- elAttr "div" ("id" =: "footer") $ mdo
     dSettingsActive <- toggle True . leftmost $ [eSet, eBackToSettings]
     let eBackToSettings = domEvent Click e
     let dSwitchLinkText = do
@@ -288,7 +289,7 @@ layoutHorizontal ::
   m a ->
   m (Event t (), Event t ())
 layoutHorizontal label number = mdo
-  elClass "div" "settings-row" $ do
+  elClass "div" "quantity-row" $ do
     dynText label
     elClass "span" "controls" $ do
       eMinus <- buttonClass "button left-button" "-"

@@ -13,7 +13,7 @@ input {
     color: #CCCCCC;
 }
 
-.header {
+#header {
     font-size: 5em;
     text-align: center;
     background-color: black;
@@ -30,32 +30,22 @@ input {
     font-size: 2em;
 } 
 
-.square-button {
-    width: 100px;
-    height: 100px;
-}
 
 .button-row {
     width: 100%;
     flex: 1 1 auto;
 }
+
 .centered-button {
     margin:  auto;
     display: block;
     font-size: 4em;
 }
+
 .settings-box {
     margin: auto;
     width: 100%;
-    min-height: 90%;
-}
-
-
-.settings-box {
     height: 90%;
-}
-.settings {
-    height:90%
 }
 
 .base-settings {
@@ -63,7 +53,8 @@ input {
     display: flex;
     flex-direction: column;
 }
-.settings-row {
+
+.quantity-row {
     display: flex;
     text-align: left;
     font-size: 4em;
@@ -75,28 +66,28 @@ input {
     bottom: 0;
 }
 
-.settings-row > .controls {
+.quantity-row > .controls {
                 margin-left: auto;
                 margin-right: 0;
                 order: 1;
                 width: 30%;
                 }
 
-.settings-row > .controls > .button {
+.quantity-row > .controls > .button {
                 font-size: 1em;
                 width: 20%;
 }
-.settings-row > .controls > .left-button {
+.quantity-row > .controls > .left-button {
                 margin-left: 0;
                 margin-right: auto;
 }
 
-.settings-row > .controls > .right-button{
+.quantity-row > .controls > .right-button{
                 margin-left: auto;
                 margin-right: 0;
 }
 
-.settings-row > .controls > .number-display {
+.quantity-row > .controls > .number-display {
                 width: 30%;
                 margin-right: auto;
                 margin-left: 0;
@@ -147,6 +138,10 @@ input {
     color: purple
 }
 
-.page-bottom {
-    text-align: center
+#footer {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    margin-top: auto;
+    text-align: center;
 }
