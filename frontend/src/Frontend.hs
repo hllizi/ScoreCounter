@@ -117,7 +117,7 @@ scoreBoardWidget dSettings dPlayers eInitialHp eListOfPlayers =
     _ <- dyn theWidget
     pure $ current dSettings <@ ePostBuild
   where
-    theWidget = scoreBoard (layoutHorizontal "player-row") dPlayers . settingsInitialHp <$> dSettings
+    theWidget = scoreBoard dPlayers . settingsInitialHp <$> dSettings
 
 settingsWidget ::
   MonadWidget t m =>
@@ -156,17 +156,19 @@ settingsWidget =
       pure $ current settings <@ eSetToInitial
   where
     healthWidget = do
+      constEmpty <- holdDyn "" never
       dInitialLabel <- holdDyn "Initial HP: " never
       plusMinus
         (dynText . fmap (T.pack . show))
-        (layoutHorizontal "")
+        (layoutHorizontal "" constEmpty)
         (initialSettings ^. #settingsInitialHp)
         dInitialLabel
     numberOfPlayersWidget = do
+      constEmpty <- holdDyn "" never
       dNumberOfPlayersLabel <- holdDyn "Number of players: " never
       plusMinus
         (dynText . fmap (T.pack . show))
-        (layoutHorizontal "")
+        (layoutHorizontal "" constEmpty)
         defaultNumberOfPlayers
         dNumberOfPlayersLabel
     createButtonWidget = do
@@ -284,11 +286,13 @@ layoutHorizontal ::
   MonadWidget t m =>
   Text ->
   Dynamic t Text ->
+  Dynamic t Text ->
   m a ->
   m (Event t (), Event t ())
-layoutHorizontal classes label number = mdo
+layoutHorizontal classes dLabelStyle label number = mdo
   elClass "div" ("quantity-row" <> " " <> classes) $ do
-    dynText label
+    elDynClass "span" dLabelStyle $
+        dynText label
     elClass "div" "controls" $ do
       eMinus <- buttonClass "button left-button rounded-corners" "-"
       _ <- elClass "span" "number-display" number
@@ -308,26 +312,32 @@ layoutVertical label number = mdo
 
 -- Display the players in a list, with scores and controls to modifiy them
 scoreBoard ::
-  (PostBuild t m, MonadHold t m, MonadFix m, DomBuilder t m) =>
-  (Dynamic t Text -> m () -> m (Event t (), Event t ())) ->
+  (MonadWidget t m, PostBuild t m, MonadHold t m, MonadFix m, DomBuilder t m) =>
   Dynamic t [Text] ->
   Int ->
   m ()
-scoreBoard layout players initialHp = mdo
+scoreBoard players initialHp = mdo
   list <-
     simpleList
       players
-      (displayRow init)
+      displayRow 
   let list2 = sequence <$> list
   _ <- pure $ join list2
   pure ()
   where
-    displayRow = do
-      pure $
+    displayRow label = mdo
+      dCurrentHp <-
         plusMinus
           (formatHp initialHp)
-          layout
+          (layoutHorizontal "player-row" dLabelStyle)
           initialHp
+          label
+      dLabelStyle <- holdDyn "" $ makeLabelStyle <$> updated dCurrentHp
+      pure dCurrentHp
+    makeLabelStyle :: Int -> Text
+    makeLabelStyle hp
+        | hp == 0 = "dead"
+        | otherwise = ""
 
 -- determine the class to use for the score. (for adjusting colour to the amount of HP)
 playerHealthClass :: (Functor f) => Int -> f Int -> f Text

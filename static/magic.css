@@ -154,3 +154,11 @@ input {
     margin-top: auto;
     text-align: center;
 }
+
+
+.dead {
+    color: crimson;
+}
+.dead::after {
+    content: "💀";
+}
