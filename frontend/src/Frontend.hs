@@ -138,7 +138,7 @@ settingsWidget =
     dPlayers <- elClass "div" "player-settings" $ mdo
       dPlayersRaw <- elDynClass "div" "player-names" $ mdo
         dPlayers <- widgetHold (pure []) ePlayerCreation
-        let inputWidgets = playerWidgets inputConfig <$> dNumberOfPlayers
+        let inputWidgets = playerNameInputWidgets inputConfig <$> dNumberOfPlayers
         let ePlayerCreation = tagPromptlyDyn inputWidgets $ leftmost [eCreatePlayers, ePostBuild]
         pure $ fmap (map value) dPlayers
 
@@ -216,13 +216,13 @@ startWidget = mdo
       | otherwise = "Scoreboard"
 
 -- A Dynamic list of input elements with the provided configuration inputConfig and as many elements as specified by the provided Dynamic t Int
-playerWidgets ::
+playerNameInputWidgets ::
   forall t m.
   (DomBuilder t m) =>
   InputElementConfig EventResult t (DomBuilderSpace m) ->
   Int ->
   m [InputElement EventResult (DomBuilderSpace m) t]
-playerWidgets inputConfig dPlayerNumber = do
+playerNameInputWidgets inputConfig dPlayerNumber = do
   mapM inputElement . makePlayerInputConfigs $ dPlayerNumber
   where
     -- make input for player #i
