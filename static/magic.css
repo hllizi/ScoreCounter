@@ -36,9 +36,15 @@ input {
 
 .button-row {
     width: 100%;
-    flex: 1 1 auto;
+    margin-top: auto;
+    margin-bottom: auto;
+    display: flex;
 }
 
+#create-button-row {
+    margin-top: 1em;
+    margin-bottom: 1em;
+}
 .centered-button {
     margin:  auto;
     display: block;
@@ -53,20 +59,24 @@ input {
 
 .base-settings {
     height: 60%;
-    display: flex;
+    margin: auto;
     flex-direction: column;
+}
+
+#quantity-controls {
+    margin-bottom: 1em;
+    display: flex;
 }
 
 .quantity-row {
     display: flex;
     text-align: left;
     font-size: 4em;
-    flex: 1 1 auto;
 }
 
 .player-row {
     background-color: #BBFFBB;
-    margin: 2px;
+    margin: 1em 0 1em 0;
 }
 
 
@@ -76,8 +86,9 @@ input {
 }
 
 .quantity-row > .controls {
+                position: absolute;
                 margin-left: auto;
-                margin-right: 0;
+                right: 0;
                 order: 1;
                 width: 30%;
                 }
@@ -87,25 +98,24 @@ input {
                 width: 20%;
 }
 .quantity-row > .controls > .left-button {
-                margin-left: 0;
-                margin-right: auto;
+    position: relative;
+    left: 0px;
 }
 
 .quantity-row > .controls > .right-button{
-                margin-left: auto;
-                margin-right: 0;
+    position: relative;
+    right: 0px;
 }
 
 .quantity-row > .controls > .number-display {
-                width: 30%;
-                margin-right: auto;
-                margin-left: 0;
+                width: auto;
+                min-width: 50%;
                 display: inline-block;
                 text-align: right;
 }
 
 
-.player-names {
+#player-names {
     width: 60%;
     margin: auto;
     display: flex;
@@ -129,6 +139,21 @@ input {
         flex-direction: row;
     }
 
+#player-settings {
+    margin-bottom: auto;
+    display: flex;
+}
+
+
+#scoreboard {
+  margin: 0;
+  width: 100%;
+  position: absolute;
+  top: 50%;
+  -ms-transform: translateY(-50%);
+  transform: translateY(-50%);
+}
+}
 .player-name {order: 1;}
 .player-plus {order: 4;}
 .player-number {order: 3;}
