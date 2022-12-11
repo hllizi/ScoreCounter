@@ -95,8 +95,6 @@ buttonClass cl label = mdo
       text label
   pure $ domEvent Click e
 
-main :: MonadWidget t m => m ()
-main = undefined
 
 data Settings = Settings
   { settingsInitialHp :: Int,
@@ -127,16 +125,16 @@ settingsWidget =
     ePostBuild <- getPostBuild
     let inputConfig =
           def
-    (dHealth, dNumberOfPlayers, eCreatePlayers) <-
-      elClass "div" "base-settings" $ mdo
+    (dHealth, dNumberOfPlayers) <-
+      elClass "div" "quantity-controls" $ mdo
         dHealth <- healthWidget
         dNumberOfPlayers <- numberOfPlayersWidget
-        eCreatePlayers <- createButtonWidget
-        pure (dHealth, dNumberOfPlayers, eCreatePlayers)
+        pure (dHealth, dNumberOfPlayers)
+    eCreatePlayers <- createButtonWidget
 
     -- Input fields for the player names
-    dPlayers <- elClass "div" "player-settings" $ mdo
-      dPlayersRaw <- elDynClass "div" "player-names" $ mdo
+    dPlayers <- elAttr "div" (idAttr "player-settings") $ mdo
+      dPlayersRaw <- elAttr "div" (idAttr "player-names") $ mdo
         dPlayers <- widgetHold (pure []) ePlayerCreation
         let inputWidgets = playerNameInputWidgets inputConfig <$> dNumberOfPlayers
         let ePlayerCreation = tagPromptlyDyn inputWidgets $ leftmost [eCreatePlayers, ePostBuild]
@@ -172,7 +170,7 @@ settingsWidget =
         defaultNumberOfPlayers
         dNumberOfPlayersLabel
     createButtonWidget = do
-      elClass "div" "button-row" $
+      elAttr "div" (idAttr "create-button-row") $
         buttonClass
           "centered-button rounded-corners"
           "Create Players"
@@ -181,8 +179,7 @@ settingsWidget =
 startWidget :: MonadWidget t m => m ()
 startWidget = mdo
   let dHeaderText = makeHeaderText <$> dSettingsActive
-  elAttr "div" ("id" =: "header") $ dynText dHeaderText
-
+  elAttr "div" (("class" =: "rounded-corners") <> idAttr "header") $ dynText dHeaderText
   let dPlayers = settingsPlayers <$> dSettingsAndSetEvent
   let dHp = settingsInitialHp <$> dSettingsAndSetEvent
   let eInitialHp = tag (current dHp) eSettingsAndSetEvent
@@ -200,7 +197,7 @@ startWidget = mdo
 
   let eSettingsAndSetEvent = switchDyn deSettingsAndSetEvent
   dSettingsAndSetEvent <- holdDyn initialSettings eSettingsAndSetEvent
-  dSettingsActive <- elAttr "div" ("id" =: "footer") $ mdo
+  dSettingsActive <- elAttr "div" (idAttr "footer") $ mdo
     dSettingsActive <- toggle True . leftmost $ [eSet, eBackToSettings]
     let eBackToSettings = domEvent Click e
     let dSwitchLinkText = do
@@ -289,7 +286,7 @@ layoutHorizontal ::
   Dynamic t Text ->
   m a ->
   m (Event t (), Event t ())
-layoutHorizontal classes dLabelStyle label number = mdo
+layoutHorizontal classes dLabelStyle label number =  mdo
   elClass "div" ("quantity-row" <> " " <> classes) $ do
     elDynClass "span" dLabelStyle $
         dynText label
@@ -316,7 +313,8 @@ scoreBoard ::
   Dynamic t [Text] ->
   Int ->
   m ()
-scoreBoard players initialHp = mdo
+scoreBoard players initialHp = 
+ elAttr "div" (idAttr "scoreboard") $ mdo
   list <-
     simpleList
       players
@@ -355,3 +353,7 @@ playerHealthClass max dCurrentHp = makeClassString <$> dCurrentHp
 formatHp initial dPlayer = mdo
   let dPlayerClass = playerHealthClass initial dPlayer
   elDynClass "span" dPlayerClass $ dynText $ T.pack . show <$> dPlayer
+
+idAttr :: Text -> Map Text Text
+idAttr = ("id" =:)
+
