@@ -1,6 +1,7 @@
 html,body { height: 100%;
             background-color: #55FF55;
             font-family: Sans-Serif;
+            font-size: 10px;
         }
 
 button {
@@ -17,7 +18,7 @@ input {
 }
 
 #header {
-    font-size: 5em;
+    font-size: 4em;
     text-align: center;
     background-color: black;
     margin-bottom: 1em;
@@ -28,11 +29,6 @@ input {
     margin: 0 auto;
     display: block;
 }
-
-.large {
-    font-size: 2em;
-} 
-
 
 .button-row {
     width: 100%;
@@ -48,7 +44,7 @@ input {
 .centered-button {
     margin:  auto;
     display: block;
-    font-size: 4em;
+    font-size: 3em;
 }
 
 .settings-box {
@@ -71,7 +67,7 @@ input {
 .quantity-row {
     display: flex;
     text-align: left;
-    font-size: 4em;
+    font-size: 3em;
 }
 
 .player-row {
@@ -123,7 +119,7 @@ input {
 }
 
 .name-field {
-    font-size: 4em;
+    font-size: 3em;
     }
 
 
