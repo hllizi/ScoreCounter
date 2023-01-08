@@ -139,7 +139,7 @@ settingsWidget =
       dPlayersRaw <- elAttr "div" (idAttr "player-names") $ mdo
         dPlayers <- widgetHold (pure []) ePlayerCreation
         let inputWidgets = playerNameInputWidgets inputConfig <$> dNumberOfPlayers
-        let ePlayerCreation = tagPromptlyDyn inputWidgets $ leftmost [eCreatePlayers, ePostBuild]
+        let ePlayerCreation = tag (current inputWidgets) eCreatePlayers
         pure $ fmap (map value) dPlayers
 
       dPlayers <- (sequence =<<) <$> holdDyn [] (updated dPlayersRaw)
@@ -182,27 +182,27 @@ startWidget :: MonadWidget t m => m ()
 startWidget = mdo
   let dHeaderText = makeHeaderText <$> dSettingsActive
   let switchToSettings = ffilter id (updated dSettingsActive)
-  let switchToScoreTable = ffilter not (updated dSettingsActive)
+  let switchToScoreBoard = ffilter not (updated dSettingsActive)
   elAttr "div" (idAttr "header") $ dynText dHeaderText
-  let dPlayers = settingsPlayers <$> dSettingsAndSetEvent
-  let dHp = settingsInitialHp <$> dSettingsAndSetEvent
-  let eInitialHp = tag (current dHp) eSettingsAndSetEvent
+  let dPlayers = settingsPlayers <$> dSettingsAndScoreBoard
+  let dHp = settingsInitialHp <$> dSettingsAndScoreBoard
+  let eInitialHp = tag (current dHp) eSettingsAndScoreBoard
   let eListOfPlayers = tag (current dPlayers) eSet
-  let eSet = () <$ eSettingsAndSetEvent
+  let eSet = () <$ eSettingsAndScoreBoard
 
 
-  deSettingsAndSetEvent <-
+  deSettingsAndScoreBoard <-
     widgetHold settingsWidget . leftmost $
       [ settingsWidget <$ switchToSettings,
         scoreBoardWidget 
-            dSettingsAndSetEvent 
+            dSettingsAndScoreBoard 
             dPlayers 
             eInitialHp 
-            eListOfPlayers <$ switchToScoreTable
+            eListOfPlayers <$ switchToScoreBoard
       ]
 
-  let eSettingsAndSetEvent = switchDyn deSettingsAndSetEvent
-  dSettingsAndSetEvent <- holdDyn initialSettings eSettingsAndSetEvent
+  let eSettingsAndScoreBoard = switchDyn deSettingsAndScoreBoard
+  dSettingsAndScoreBoard <- holdDyn initialSettings eSettingsAndScoreBoard
   --Show a link that goes back to the settings page in the footer of the scoreboard
   dSettingsActive <- elAttr "div" (idAttr "footer") $ mdo
     let dSwitchLinkWidget = do
@@ -214,7 +214,7 @@ startWidget = mdo
             else  pure never
     eeBackToSettings <- dyn dSwitchLinkWidget
     eBackToSettings <- switchHold never eeBackToSettings
-    toggle True . leftmost $ [eSet, eBackToSettings]
+    toggle True . leftmost $ [eBackToSettings, eSet]
   pure ()
   where
     makeHeaderText :: Bool -> Text
