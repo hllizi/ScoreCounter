@@ -181,20 +181,24 @@ settingsWidget =
 startWidget :: MonadWidget t m => m ()
 startWidget = mdo
   let dHeaderText = makeHeaderText <$> dSettingsActive
-  elAttr "div" (("class" =: "rounded-corners") <> idAttr "header") $ dynText dHeaderText
+  let switchToSettings = ffilter id (updated dSettingsActive)
+  let switchToScoreTable = ffilter not (updated dSettingsActive)
+  elAttr "div" (idAttr "header") $ dynText dHeaderText
   let dPlayers = settingsPlayers <$> dSettingsAndSetEvent
   let dHp = settingsInitialHp <$> dSettingsAndSetEvent
   let eInitialHp = tag (current dHp) eSettingsAndSetEvent
   let eListOfPlayers = tag (current dPlayers) eSet
   let eSet = () <$ eSettingsAndSetEvent
 
-  let switchToSettings = ffilter id (updated dSettingsActive)
-  let switchToScoreTable = ffilter not (updated dSettingsActive)
 
   deSettingsAndSetEvent <-
     widgetHold settingsWidget . leftmost $
       [ settingsWidget <$ switchToSettings,
-        scoreBoardWidget dSettingsAndSetEvent dPlayers eInitialHp eListOfPlayers <$ switchToScoreTable
+        scoreBoardWidget 
+            dSettingsAndSetEvent 
+            dPlayers 
+            eInitialHp 
+            eListOfPlayers <$ switchToScoreTable
       ]
 
   let eSettingsAndSetEvent = switchDyn deSettingsAndSetEvent
