@@ -201,7 +201,6 @@ startWidget = mdo
   dSettingsAndSetEvent <- holdDyn initialSettings eSettingsAndSetEvent
   --Show a link that goes back to the settings page in the footer of the scoreboard
   dSettingsActive <- elAttr "div" (idAttr "footer") $ mdo
-    dSettingsActive <- toggle True . leftmost $ [eSet, eBackToSettings]
     let dSwitchLinkWidget = do
           settingsActive <- dSettingsActive
           pure $ if not settingsActive
@@ -211,7 +210,7 @@ startWidget = mdo
             else  pure never
     eeBackToSettings <- dyn dSwitchLinkWidget
     eBackToSettings <- switchHold never eeBackToSettings
-    pure dSettingsActive
+    toggle True . leftmost $ [eSet, eBackToSettings]
   pure ()
   where
     makeHeaderText :: Bool -> Text
