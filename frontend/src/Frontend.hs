@@ -113,9 +113,8 @@ scoreBoardWidget ::
   m (Event t Settings)
 scoreBoardWidget dSettings dPlayers eInitialHp eListOfPlayers =
   do
-    ePostBuild <- getPostBuild
-    _ <- dyn theWidget
-    pure $ current dSettings <@ ePostBuild
+    dyn theWidget
+    pure never
   where
     theWidget = scoreBoard dPlayers . settingsInitialHp <$> dSettings
 
