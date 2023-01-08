@@ -49,12 +49,14 @@ frontend =
         --                <> "href" =: "/home/dlahm/Programmfragmente/reflex/magic/magic.css"
         --            )
         --            blank
+        elAttr "meta" ("name"=:"viewport" <> "content" =:"width=device-width, initial-scale=1.0") blank
 #ifdef __GHCIDE__
 #else
         elAttr "link" ("href" =: $(static "magic.css") <> "type" =: "text/css" <> "rel" =: "stylesheet") blank
 --        elAttr "link" ("href" =: $(static "bootstrap/css/*.css") <> "type" =: "text/css" <> "rel" =: "stylesheet") blank
 --        elAttr "link" ("href" =: $(static "bootstrap/js/*.js") <> "type" =: "text/css" <> "rel" =: "stylesheet") blank
 #endif
+
         pure (),
       _frontend_body = do
         prerender (el "div" $ text "No JS") startWidget
@@ -65,7 +67,7 @@ initialHp :: Int
 initialHp = 20
 
 defaultNumberOfPlayers :: Int
-defaultNumberOfPlayers = 2
+defaultNumberOfPlayers = 2 
 
 initialSettings = Settings initialHp []
 
@@ -149,7 +151,7 @@ settingsWidget =
       eSetToInitial <-
         elClass "div" "button-row" $
           buttonClass
-            "centered-button rounded-corners"
+            "centered-button rounded-corners bottom-margin"
             "Set to initial"
       pure $ current settings <@ eSetToInitial
   where
