@@ -270,15 +270,14 @@ plusMinus ::
   Dynamic t Text -> -- Text label
   m (Dynamic t Int)
 plusMinus numberFormat layout init label = mdo
-  ePostBuild <- getPostBuild
   let eChange =
         leftmost
-          [ const init <$ ePostBuild,
+          [ 
             (+ 1) <$ ePlus,
             limitedDec <$ eMinus
           ]
   (eMinus, ePlus) <- layout label (numberFormat dValue)
-  dValue <- foldDyn ($) 0 eChange
+  dValue <- foldDyn ($) init eChange
   pure dValue
   where
     limitedDec x
