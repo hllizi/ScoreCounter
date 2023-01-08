@@ -124,7 +124,6 @@ settingsWidget ::
   m (Event t Settings)
 settingsWidget =
   elClass "div" "settings-box" $ mdo
-    ePostBuild <- getPostBuild
     let inputConfig =
           def
     (dHealth, dNumberOfPlayers) <-
