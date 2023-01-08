@@ -197,15 +197,18 @@ startWidget = mdo
 
   let eSettingsAndSetEvent = switchDyn deSettingsAndSetEvent
   dSettingsAndSetEvent <- holdDyn initialSettings eSettingsAndSetEvent
+  --Show a link that goes back to the settings page in the footer of the scoreboard
   dSettingsActive <- elAttr "div" (idAttr "footer") $ mdo
     dSettingsActive <- toggle True . leftmost $ [eSet, eBackToSettings]
-    let eBackToSettings = domEvent Click e
-    let dSwitchLinkText = do
+    let dSwitchLinkWidget = do
           settingsActive <- dSettingsActive
-          if settingsActive
-            then "Switch to score board"
-            else "New Scoreboard"
-    (e, _) <- elAttr' "a" ("href" =: "") $ dynText dSwitchLinkText
+          pure $ if not settingsActive
+            then do 
+                  (e, _) <- elAttr' "a" ("href" =: "") $ text "New Scoreboard"
+                  pure $ domEvent Click e
+            else  pure never
+    eeBackToSettings <- dyn dSwitchLinkWidget
+    eBackToSettings <- switchHold never eeBackToSettings
     pure dSettingsActive
   pure ()
   where
