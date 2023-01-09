@@ -113,10 +113,8 @@ scoreBoardWidget ::
   m (Event t Settings)
 scoreBoardWidget dSettings dPlayers eInitialHp eListOfPlayers =
   do
-    dyn theWidget
+    dyn $ scoreBoard dPlayers . settingsInitialHp <$> dSettings
     pure never
-  where
-    theWidget = scoreBoard dPlayers . settingsInitialHp <$> dSettings
 
 settingsWidget ::
   MonadWidget t m =>
