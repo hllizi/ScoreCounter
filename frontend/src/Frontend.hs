@@ -42,19 +42,21 @@ frontend :: Frontend (R FrontendRoute)
 frontend =
   Frontend
     { _frontend_head = do
-        el "title" $ text "Obelisk Minimal Example"
+        el "title" $ text "Scoreboard"
         --        elAttr
         --            "link"
         --            ( "rel" =: "stylesheet"
         --                <> "href" =: "/home/dlahm/Programmfragmente/reflex/magic/magic.css"
         --            )
         --            blank
+        elAttr "meta" ("name"=:"viewport" <> "content" =:"width=device-width, initial-scale=1.0") blank
 #ifdef __GHCIDE__
 #else
         elAttr "link" ("href" =: $(static "magic.css") <> "type" =: "text/css" <> "rel" =: "stylesheet") blank
 --        elAttr "link" ("href" =: $(static "bootstrap/css/*.css") <> "type" =: "text/css" <> "rel" =: "stylesheet") blank
 --        elAttr "link" ("href" =: $(static "bootstrap/js/*.js") <> "type" =: "text/css" <> "rel" =: "stylesheet") blank
 #endif
+
         pure (),
       _frontend_body = do
         prerender (el "div" $ text "No JS") startWidget
@@ -62,10 +64,12 @@ frontend =
     }
 
 initialHp :: Int
-initialHp = 10
+initialHp = 20
 
-initialNumberOfPlayers :: Int
-initialNumberOfPlayers = 2
+defaultNumberOfPlayers :: Int
+defaultNumberOfPlayers = 2 
+
+initialSettings = Settings initialHp []
 
 data HealthState = Good | Ok | Danger | HighDanger
 
@@ -75,35 +79,24 @@ instance Show HealthState where
   show Danger = "danger"
   show HighDanger = "high-danger"
 
-healthState :: Int -> Int -> HealthState
-healthState upper hp
-  | hp > 2 * (upper `div` 3) = Good
-  | hp > upper `div` 3 = Ok
-  | hp < upper `div` 10 = HighDanger
-  | otherwise = Danger
-
 button :: MonadWidget t m => Text -> m (Event t ())
-button = buttonClass ""
+button = buttonClass "rounded-corners"
 
 buttonClass ::
   MonadWidget t m =>
   Text ->
   Text ->
   m (Event t ())
+
 --buttonClass _ label = button label
 
+-- | create a button with class(es) "cl" and label "label"
 buttonClass cl label = mdo
   (e, _) <-
     elAttr' "button" ("type" =: "button" <> "class" =: ("large " <> cl)) $
       text label
   pure $ domEvent Click e
 
-main :: MonadWidget t m => m ()
-main = undefined
-
-mkHidden :: Bool -> Map Text Text
-mkHidden True = "hidden" =: ""
-mkHidden False = mempty
 
 data Settings = Settings
   { settingsInitialHp :: Int,
@@ -111,151 +104,145 @@ data Settings = Settings
   }
   deriving (Generic)
 
-initialSettings = Settings initialHp []
-
-scoreTableWidgetFull ::
+scoreBoardWidget ::
   MonadWidget t m =>
   Dynamic t Settings ->
   Dynamic t [Text] ->
   Event t Int ->
   Event t [Text] ->
   m (Event t Settings)
-scoreTableWidgetFull dSettings dPlayers eInitialHp eListOfPlayers =
+scoreBoardWidget dSettings dPlayers eInitialHp eListOfPlayers =
   do
-    ePostBuild <- getPostBuild
-    playersWidget
-    pure $ (current dSettings) <@ ePostBuild
-  where
-    playersWidget = players layoutVertical dPlayers (settingsInitialHp <$> dSettings)
+    dyn $ scoreBoard dPlayers . settingsInitialHp <$> dSettings
+    pure never
 
-settingsWidgetFull ::
+settingsWidget ::
   MonadWidget t m =>
   m (Event t Settings)
-settingsWidgetFull =
-  elClass "div" "settings-box" $ do
-    settingsWidget
+settingsWidget =
+  elClass "div" "settings-box" $ mdo
+    let inputConfig =
+          def
+    (dHealth, dNumberOfPlayers) <-
+      elClass "div" "quantity-controls" $ mdo
+        dHealth <- healthWidget
+        dNumberOfPlayers <- numberOfPlayersWidget
+        pure (dHealth, dNumberOfPlayers)
+    eCreatePlayers <- createButtonWidget
+
+    -- Input fields for the player names
+    dPlayers <- elAttr "div" (idAttr "player-settings") $ mdo
+      dPlayersRaw <- elAttr "div" (idAttr "player-names") $ mdo
+        dPlayers <- widgetHold (pure []) ePlayerCreation
+        let inputWidgets = playerNameInputWidgets inputConfig <$> dNumberOfPlayers
+        let ePlayerCreation = tag (current inputWidgets) eCreatePlayers
+        pure $ fmap (map value) dPlayers
+
+      dPlayers <- (sequence =<<) <$> holdDyn [] (updated dPlayersRaw)
+      pure dPlayers
+
+    let settings = Settings <$> dHealth <*> dPlayers
+    -- The button to set up an switch to the score board.
+    elClass "div" "button-row bottom" $ do
+      eSetToInitial <-
+        elClass "div" "button-row" $
+          buttonClass
+            "centered-button rounded-corners bottom-margin"
+            "Set to initial"
+      pure $ current settings <@ eSetToInitial
+  where
+    healthWidget = do
+      constEmpty <- holdDyn "" never
+      dInitialLabel <- holdDyn "Initial HP: " never
+      plusMinus
+        (dynText . fmap (T.pack . show))
+        (layoutHorizontal "" constEmpty)
+        (initialSettings ^. #settingsInitialHp)
+        dInitialLabel
+    numberOfPlayersWidget = do
+      constEmpty <- holdDyn "" never
+      dNumberOfPlayersLabel <- holdDyn "Number of players: " never
+      plusMinus
+        (dynText . fmap (T.pack . show))
+        (layoutHorizontal "" constEmpty)
+        defaultNumberOfPlayers
+        dNumberOfPlayersLabel
+    createButtonWidget = do
+      elAttr "div" (idAttr "create-button-row") $
+        buttonClass
+          "centered-button rounded-corners"
+          "Create Players"
 
 -- | The start widget is the main Widget that ties everything together
 startWidget :: MonadWidget t m => m ()
 startWidget = mdo
-  ePostBuild <- getPostBuild
-  elClass "div" "header" $ text "Settings"
-
-  let dPlayers = settingsPlayers <$> dSettingsAndSetEvent
-  let dHp = settingsInitialHp <$> dSettingsAndSetEvent
-  let eInitialHp = tagPromptlyDyn dHp eSettingsAndSetEvent
-  let eListOfPlayers = tag (current dPlayers) eSet
-  let eSet = () <$ eSettingsAndSetEvent
-
-  dSettingsActive <- elClass "div" "page-bottom" $ mdo
-    dSettingsActive <- toggle True . leftmost $ [eSet, eBackToSettings]
-    let eBackToSettings = domEvent Click e
-    let dSwitchLinkText = do
-          settingsActive <- dSettingsActive
-          if settingsActive
-            then "Switch to score board"
-            else "Back to Settings"
-    (e, _) <- elAttr' "a" ("href" =: "") $ dynText dSwitchLinkText
-    pure dSettingsActive
-
+  let dHeaderText = makeHeaderText <$> dSettingsActive
   let switchToSettings = ffilter id (updated dSettingsActive)
-  let switchToScoreTable = ffilter not (updated dSettingsActive)
+  let switchToScoreBoard = ffilter not (updated dSettingsActive)
+  elAttr "div" (idAttr "header") $ dynText dHeaderText
+  let dPlayers = settingsPlayers <$> dSettingsAndScoreBoard
+  let dHp = settingsInitialHp <$> dSettingsAndScoreBoard
+  let eInitialHp = tag (current dHp) eSettingsAndScoreBoard
+  let eListOfPlayers = tag (current dPlayers) eSet
+  let eSet = () <$ eSettingsAndScoreBoard
 
-  deSettingsAndSetEvent <-
-    widgetHold settingsWidgetFull . leftmost $
-      [ settingsWidgetFull <$ switchToSettings,
-        scoreTableWidgetFull dSettingsAndSetEvent dPlayers eInitialHp eListOfPlayers <$ switchToScoreTable
+
+  deSettingsAndScoreBoard <-
+    widgetHold settingsWidget . leftmost $
+      [ settingsWidget <$ switchToSettings,
+        scoreBoardWidget 
+            dSettingsAndScoreBoard 
+            dPlayers 
+            eInitialHp 
+            eListOfPlayers <$ switchToScoreBoard
       ]
 
-  let eSettingsAndSetEvent = switchDyn deSettingsAndSetEvent
-  dSettingsAndSetEvent <- holdDyn initialSettings eSettingsAndSetEvent
-  el "div" $ dynText $ (T.pack . show . settingsInitialHp) <$> dSettingsAndSetEvent
+  let eSettingsAndScoreBoard = switchDyn deSettingsAndScoreBoard
+  dSettingsAndScoreBoard <- holdDyn initialSettings eSettingsAndScoreBoard
+  --Show a link that goes back to the settings page in the footer of the scoreboard
+  dSettingsActive <- elAttr "div" (idAttr "footer") $ mdo
+    let dSwitchLinkWidget = do
+          settingsActive <- dSettingsActive
+          pure $ if not settingsActive
+            then do 
+                  (e, _) <- elAttr' "a" ("href" =: "") $ text "New Scoreboard"
+                  pure $ domEvent Click e
+            else  pure never
+    eeBackToSettings <- dyn dSwitchLinkWidget
+    eBackToSettings <- switchHold never eeBackToSettings
+    toggle True . leftmost $ [eBackToSettings, eSet]
   pure ()
-
-settingsWidget :: MonadWidget t m => m (Event t Settings)
-settingsWidget = mdo
-  ePostBuild <- getPostBuild
-  let eInitPlayernumber = 2 <$ ePostBuild
-  let inputConfig =
-        def
-          & inputElementConfig_elementConfig
-            . elementConfig_initialAttributes
-            .~ ("class" =: "large centered")
-  (dHp, dNumberOfPlayers, eCreatePlayers) <-
-    elClass "div" "base-settings" $ mdo
-      dInitialHp <- holdDyn (initialSettings ^. #settingsInitialHp) never
-      dHp <- do
-        dInitialLabel <- holdDyn "Initial: " never
-        plusMinus
-          (dynText . fmap (T.pack . show))
-          layout
-          dInitialHp
-          dInitialLabel
-
-      dInitialNumberOfPlayers <- holdDyn initialNumberOfPlayers never
-      dNumberOfPlayers <- do
-        dNumberOfPlayersLabel <- holdDyn "Number of players: " never
-        plusMinus
-          (dynText . fmap (T.pack . show))
-          layout
-          dInitialNumberOfPlayers
-          dNumberOfPlayersLabel
-
-      eCreatePlayers <-
-        elClass "div" "button-row" $
-          buttonClass
-            "centered-button"
-            "Create Players"
-      pure (dHp, dNumberOfPlayers, eCreatePlayers)
-
-  -- Inpts for the player names
-  dPlayers <- elClass "div" "player-settings" $ mdo
-    dPlayersRaw <- elDynClass "div" "player-names" $ mdo
-      let widgets = playerWidgets inputConfig dNumberOfPlayers
-      let ePlayerCreation = current widgets <@ leftmost [eCreatePlayers, ePostBuild]
-      dPlayers <- widgetHold ((: []) <$> inputElement inputConfig) ePlayerCreation
-      pure $ fmap (map value) dPlayers
-
-    ddPlayers <- fmap sequence <$> holdDyn [] (updated dPlayersRaw)
-    pure $ join ddPlayers
-
-  let settings = Settings <$> dHp <*> dPlayers
-  -- The button to set up an switch to the score board.
-  elClass "div" "button-row bottom" $ do
-    eSetToInitial <-
-      elClass "div" "button-row" $
-        buttonClass
-          "centered-button"
-          "Set to initial"
-    pure $ (current settings) <@ eSetToInitial
-
-playerWidgets ::
-  (DomBuilder t m, Reflex t) =>
-  InputElementConfig EventResult t (DomBuilderSpace m) ->
-  Dynamic t Int ->
-  Dynamic t (m [InputElement EventResult (DomBuilderSpace m) t])
-playerWidgets inputConfig dPlayerNumber = do
-  playerNumber <- dPlayerNumber
-  pure $ mapM inputElement $ makePlayerInputConfigs playerNumber
   where
-    makePlayerInputConfig :: (DomSpace s, Reflex t) => Int -> InputElementConfig EventResult t s
-    makePlayerInputConfig i =
-      ( def
-          & inputElementConfig_elementConfig
-            . elementConfig_initialAttributes
-          .~ ("class" =: "name-field" <> "placeholder" =: ("Player " <> (T.pack $ show i)))
-      )
+    makeHeaderText :: Bool -> Text
+    makeHeaderText settingsActive
+      | settingsActive = "Settings"
+      | otherwise = "Scoreboard"
 
-    makePlayerInputConfigs :: (DomSpace s, Reflex t) => Int -> [InputElementConfig EventResult t s]
+-- A Dynamic list of input elements with the provided configuration inputConfig and as many elements as specified by the provided Dynamic t Int
+playerNameInputWidgets ::
+  forall t m.
+  (DomBuilder t m) =>
+  InputElementConfig EventResult t (DomBuilderSpace m) ->
+  Int ->
+  m [InputElement EventResult (DomBuilderSpace m) t]
+playerNameInputWidgets inputConfig dPlayerNumber = do
+  mapM inputElement . makePlayerInputConfigs $ dPlayerNumber
+  where
+    -- make input for player #i
+    makePlayerInputConfig :: Int -> InputElementConfig EventResult t (DomBuilderSpace m)
+    makePlayerInputConfig i =
+      inputConfig
+        & inputElementConfig_initialValue .~ ("Player " <> T.pack (show i))
+        & inputElementConfig_elementConfig
+          . elementConfig_initialAttributes
+          .~ ("class" =: "name-field rounded-corners")
+
+    -- make inputs for all players
+    makePlayerInputConfigs :: Int -> [InputElementConfig EventResult t (DomBuilderSpace m)]
     makePlayerInputConfigs numberOfPlayers =
       map
         makePlayerInputConfig
         [1 .. numberOfPlayers]
-
-displayInputLine :: MonadWidget t m => Dynamic t (m (InputElement EventResult (DomBuilderSpace m) t)) -> m ()
-displayInputLine dInputLine = mdo
-  text "Dynte Baal"
-  dyn_ dInputLine
 
 testWidget :: MonadWidget t m => Dynamic t (m ())
 testWidget = pure $ do
@@ -271,77 +258,105 @@ inputElementSource =
           .~ ("class" =: "name-field")
    in inputElement namefieldConf
 
+--  Use a function to format a number, a function to layout the parts, a Dynamic t Int to provide the start value and a label and use them to produce +/- controls for adjusting a labeled numerical value
 plusMinus ::
   (DomBuilder t m, PostBuild t m, MonadHold t m, MonadFix m) =>
   (Dynamic t Int -> m ()) ->
   (Dynamic t Text -> m () -> m (Event t (), Event t ())) -> -- Function to layout the control element
-  Dynamic t Int -> -- Initial value
+  Int -> -- Initial value
   Dynamic t Text -> -- Text label
   m (Dynamic t Int)
-plusMinus numberFormat layout dInitial label = mdo
-  ePostBuild <- getPostBuild
+plusMinus numberFormat layout init label = mdo
   let eChange =
         leftmost
-          [ const <$> tagPromptlyDyn dInitial ePostBuild,
+          [ 
             (+ 1) <$ ePlus,
-            ( \x ->
-                if x > 0
-                  then x - 1
-                  else x
-            )
-              <$ eMinus
+            limitedDec <$ eMinus
           ]
   (eMinus, ePlus) <- layout label (numberFormat dValue)
-  dValue <- foldDyn ($) 0 eChange
+  dValue <- foldDyn ($) init eChange
   pure dValue
+  where
+    limitedDec x
+      | x > 0 = x - 1
+      | otherwise = x
 
-layout label number = mdo
-  elClass "div" "settings-row" $ do
-    dynText label
-    elClass "span" "controls" $ do
-      eMinus <- buttonClass "button left-button" "-"
-      elClass "span" "number-display" number
-      ePlus <- buttonClass "button right-button" "+"
+-- display +/- controls (horizontally arranged)
+layoutHorizontal ::
+  MonadWidget t m =>
+  Text ->
+  Dynamic t Text ->
+  Dynamic t Text ->
+  m a ->
+  m (Event t (), Event t ())
+layoutHorizontal classes dLabelStyle label number =  mdo
+  elClass "div" ("quantity-row" <> " " <> classes) $ do
+    elDynClass "span" dLabelStyle $
+        dynText label
+    elClass "div" "controls" $ do
+      eMinus <- buttonClass "button left-button rounded-corners" "-"
+      _ <- elClass "span" "number-display" number
+      ePlus <- buttonClass "button right-button rounded-corners" "+"
       pure (eMinus, ePlus)
 
---layoutVertical :: (MonadWidget t m, DomBuilder t m) => Text -> m () -> m (Event t (), Event t ())
+-- display +/- controls vertically arranged
+layoutVertical :: MonadWidget t m => Dynamic t Text -> m a -> m (Event t (), Event t ())
 layoutVertical label number = mdo
   elClass "div" "large" $ do
     elClass "tr" "player-container" $ mdo
       elClass "td" "player-name" $ dynText label
       eMinus <- elClass "td" "player-minus" $ button "-"
-      elClass "td" "player-number large" number
+      _ <- elClass "td" "player-number large" number
       ePlus <- elClass "td" "player-plus" $ button "+"
       pure (eMinus, ePlus)
 
-players ::
-  (PostBuild t m, MonadHold t m, MonadFix m, DomBuilder t m) =>
-  (Dynamic t Text -> m () -> m (Event t (), Event t ())) ->
+-- Display the players in a list, with scores and controls to modifiy them
+scoreBoard ::
+  (MonadWidget t m, PostBuild t m, MonadHold t m, MonadFix m, DomBuilder t m) =>
   Dynamic t [Text] ->
-  Dynamic t Int ->
-  -- m (Dynamic t [Int])
+  Int ->
   m ()
-players layout players dInitial = mdo
-  --dInitial <- holdDyn initialHp dInitial
+scoreBoard players initialHp = 
+ elAttr "div" (idAttr "scoreboard") $ mdo
   list <-
     simpleList
       players
-      (displayRow dInitial)
+      displayRow 
   let list2 = sequence <$> list
-  pure $ join list2
+  _ <- pure $ join list2
   pure ()
   where
-    displayRow dInitial = do
-      plusMinus
-        (formatHp dInitial)
-        layout
-        dInitial
+    displayRow label = mdo
+      dCurrentHp <-
+        plusMinus
+          (formatHp initialHp)
+          (layoutHorizontal "player-row" dLabelStyle)
+          initialHp
+          label
+      dLabelStyle <- holdDyn "" $ makeLabelStyle <$> updated dCurrentHp
+      pure dCurrentHp
+    makeLabelStyle :: Int -> Text
+    makeLabelStyle hp
+        | hp == 0 = "dead"
+        | otherwise = ""
 
-playerHealthClass dInitial dPlayer = do
-  max <- dInitial
-  playerHp <- dPlayer
-  pure $ T.pack . show $ healthState max playerHp
+-- determine the class to use for the score. (for adjusting colour to the amount of HP)
+playerHealthClass :: (Functor f) => Int -> f Int -> f Text
+playerHealthClass max dCurrentHp = makeClassString <$> dCurrentHp
+  where
+    makeClassString = T.pack . show . healthState max
+    healthState :: Int -> Int -> HealthState
+    healthState upper hp
+      | hp > 2 * (upper `div` 3) = Good
+      | hp > upper `div` 3 = Ok
+      | hp < upper `div` 10 = HighDanger
+      | otherwise = Danger
 
-formatHp dInitial dPlayer = mdo
-  let dPlayerClass = playerHealthClass dInitial dPlayer
+--  formatted HP
+formatHp initial dPlayer = mdo
+  let dPlayerClass = playerHealthClass initial dPlayer
   elDynClass "span" dPlayerClass $ dynText $ T.pack . show <$> dPlayer
+
+idAttr :: Text -> Map Text Text
+idAttr = ("id" =:)
+

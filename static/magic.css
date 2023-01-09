@@ -1,95 +1,128 @@
-html,body { height: 100%;}
+html,body { 
+            background-color: #55FF55;
+            font-family: Sans-Serif;
+            font-size: 10px;
+            width: 100%;
+            height: 100%;
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+body {
+    margin: 0;
+}
+
+button {
+    background-color: #000077;
+    color: #CCCCCC;
+}
+
+.rounded-corners {
+    border-radius: 10px;
+}
+input {
+    background-color: #AA0000;
+    color: #CCCCCC;
+}
+
+#header {
+    font-size: 4em;
+    text-align: center;
+    background-color: black;
+    margin-bottom: 1em;
+    color: #AAAAFF;
+}
 
 .centered {
     margin: 0 auto;
     display: block;
 }
 
-.large {
-    font-size: 2em;
-} 
-
-.square-button {
-    width: 100px;
-    height: 100px;
-}
-
 .button-row {
     width: 100%;
-    flex: 1 1 auto;
+    max-width: 100%;
+    margin-top: auto;
+    margin-bottom: auto;
+    display: flex;
+    flex-wrap: wrap;
+}
+
+#create-button-row {
+    margin-top: 1em;
+    margin-bottom: 1em;
 }
 .centered-button {
     margin:  auto;
     display: block;
-    font-size: 4em;
+    font-size: 3em;
 }
+
 .settings-box {
-    margin: auto;
     width: 100%;
-    min-height: 90%;
-}
-
-.header {
-    font-size: 5em;
-    text-align: center;
-    background-color: light-blue;
-}
-
-.settings-box {
-    height: 90%;
-}
-.settings {
-    height:90%
+    max-width: 100%;
 }
 
 .base-settings {
     height: 60%;
-    display: flex;
+    margin: auto;
     flex-direction: column;
 }
-.settings-row {
+
+#quantity-controls {
+    margin-bottom: 1em;
+    display: flex;
+}
+
+.quantity-row {
     display: flex;
     text-align: left;
-    font-size: 4em;
-    flex: 1 1 auto
+    font-size: 2.5em;
+    margin-bottom: 10px;
 }
+
+.player-row {
+    background-color: #BBFFBB;
+    margin: 1em 0 1em 0;
+}
+
 
 .bottom {
     position: absolute;
     bottom: 0;
 }
 
-.settings-row > .controls {
+.quantity-row > .controls {
+                position: absolute;
                 margin-left: auto;
-                margin-right: 0;
+                right: 0;
                 order: 1;
                 width: 30%;
                 }
 
-.settings-row > .controls > .button {
+.quantity-row > .controls > .button {
                 font-size: 1em;
+                height: 100%;
                 width: 20%;
 }
-.settings-row > .controls > .left-button {
-                margin-left: 0;
-                margin-right: auto;
+.quantity-row > .controls > .left-button {
+    position: relative;
+    left: 0px;
 }
 
-.settings-row > .controls > .right-button{
-                margin-left: auto;
-                margin-right: 0;
+.quantity-row > .controls > .right-button{
+    position: relative;
+    right: 0px;
 }
 
-.settings-row > .controls > .number-display {
-                width: 30%;
-                margin-right: auto;
-                margin-left: 0;
+.quantity-row > .controls > .number-display {
+                width: auto;
+                min-width: 50%;
                 display: inline-block;
                 text-align: right;
 }
 
 
-.player-names {
+#player-names {
     width: 60%;
     margin: auto;
     display: flex;
@@ -97,7 +130,7 @@ html,body { height: 100%;}
 }
 
 .name-field {
-    font-size: 4em;
+    font-size: 3em;
     }
 
 
@@ -113,6 +146,22 @@ html,body { height: 100%;}
         flex-direction: row;
     }
 
+#player-settings {
+    margin-bottom: auto;
+    display: flex;
+    flex-wrap: wrap;
+}
+
+
+#scoreboard {
+  margin: 0;
+  width: 100%;
+  position: absolute;
+  top: 50%;
+  -ms-transform: translateY(-50%);
+  transform: translateY(-50%);
+}
+}
 .player-name {order: 1;}
 .player-plus {order: 4;}
 .player-number {order: 3;}
@@ -129,4 +178,24 @@ html,body { height: 100%;}
 }
 .high-danger {
     color: purple
+}
+
+#footer {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    margin-top: auto;
+    text-align: center;
+    min-height: 10px;
+}
+
+.bottom-margin {
+    margin-bottom: 10px;
+}
+
+.dead {
+    color: crimson;
+}
+.dead::after {
+    content: "💀";
 }
