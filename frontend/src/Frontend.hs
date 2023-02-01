@@ -200,17 +200,15 @@ startWidget = mdo
   let eSettingsAndScoreBoard = switchDyn deSettingsAndScoreBoard
   dSettingsAndScoreBoard <- holdDyn initialSettings eSettingsAndScoreBoard
   --Show a link that goes back to the settings page in the footer of the scoreboard
-  dSettingsActive <- elAttr "div" (idAttr "footer") $ mdo
+  eBackToSettings <- elAttr "div" (idAttr "footer") $ mdo
     let dSwitchLinkWidget = do
           settingsActive <- dSettingsActive
           pure $ if not settingsActive
-            then do 
-                  (e, _) <- elAttr' "a" ("href" =: "") $ text "New Scoreboard"
-                  pure $ domEvent Click e
+            then  button "Setup new Scoreboard"
             else  pure never
     eeBackToSettings <- dyn dSwitchLinkWidget
-    eBackToSettings <- switchHold never eeBackToSettings
-    toggle True . leftmost $ [eBackToSettings, eSet]
+    switchHold never eeBackToSettings
+  dSettingsActive <-  toggle True . leftmost $ [eBackToSettings, eSet]
   pure ()
   where
     makeHeaderText :: Bool -> Text
